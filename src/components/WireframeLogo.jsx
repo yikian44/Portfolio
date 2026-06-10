@@ -51,16 +51,16 @@ export default function WireframeLogo() {
           rotateY,
         }}
       >
-        {/* Core sphere/gyro rings */}
-        <Ring delay={0} duration={20} axis="Z" isMobile={isMobile} />
+        {/* Core sphere/gyro rings (Static 3D shape) */}
+        <Ring rotateX={70} rotateY={20} rotateZ={10} isMobile={isMobile} />
         {!isMobile && (
           <>
-            <Ring delay={0} duration={25} axis="X" />
-            <Ring delay={0} duration={15} axis="Y" size={0.8} />
-            <Ring delay={0} duration={30} axis="Z" size={0.6} reverse />
+            <Ring rotateX={20} rotateY={70} rotateZ={30} />
+            <Ring rotateX={45} rotateY={45} rotateZ={0} size={0.8} />
+            <Ring rotateX={0} rotateY={90} rotateZ={45} size={0.6} />
           </>
         )}
-        <Ring delay={0} duration={18} axis="X" size={0.4} reverse isMobile={isMobile} />
+        <Ring rotateX={90} rotateY={0} rotateZ={90} size={0.4} isMobile={isMobile} />
         
         {/* Tech crosshairs in center */}
         <div style={{
@@ -103,20 +103,9 @@ export default function WireframeLogo() {
   );
 }
 
-function Ring({ delay, duration, axis, size = 1, reverse = false, isMobile = false }) {
-  const rotateProp = `rotate${axis}`;
-  const endAngle = reverse ? -360 : 360;
-
+function Ring({ rotateX = 0, rotateY = 0, rotateZ = 0, size = 1, isMobile = false }) {
   return (
     <motion.div
-      initial={{ [rotateProp]: 0 }}
-      animate={{ [rotateProp]: endAngle }}
-      transition={{ 
-        duration, 
-        repeat: Infinity, 
-        ease: "linear",
-        delay 
-      }}
       style={{
         position: 'absolute',
         top: `${50 - (size * 50)}%`,
@@ -127,6 +116,9 @@ function Ring({ delay, duration, axis, size = 1, reverse = false, isMobile = fal
         border: '1px solid var(--blueprint-color)',
         opacity: 0.25,
         transformStyle: 'preserve-3d',
+        rotateX,
+        rotateY,
+        rotateZ,
         boxShadow: isMobile ? 'none' : 'inset 0 0 15px rgba(0, 210, 255, 0.1), 0 0 15px rgba(0, 210, 255, 0.1)',
       }}
     >
