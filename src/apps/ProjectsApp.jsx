@@ -11,7 +11,7 @@ export default function ProjectsApp() {
       desc: 'Jalan Square is a collaborative travel-planning app for Malaysian users that combines destination discovery, group voting, itinerary management, budgeting, and communication into one unified experience.',
       img: '/jalan-square.png.png',
       tags: ['Figma'],
-      live: 'https://www.figma.com/design/UvyZ4mWLooxRDjwbhJFRAj/Jalan-Square?node-id=451-610&t=ncZBAI6drbrumeG4-1',
+      live: 'https://www.figma.com/proto/UvyZ4mWLooxRDjwbhJFRAj/Jalan-Square?node-id=451-610&t=c2dQCzUzX64cykse-1',
       github: '#'
     },
     {
