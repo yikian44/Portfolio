@@ -115,6 +115,8 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
           <button 
             type="button"
             onClick={handleClose} 
+            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{ 
               position: 'absolute',
               left: '16px',
