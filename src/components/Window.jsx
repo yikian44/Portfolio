@@ -60,7 +60,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
         opacity: 1,
         ...(forceMaximized ? { x: 0, y: 0, width: '100%', height: '100%' } : { width: size.width, height: size.height })
       }}
-      exit={isMobile ? { opacity: 0, transition: { duration: 0.15 } } : { scale: 0.8, opacity: 0, y: 200 }}
+      exit={isMobile ? undefined : { scale: 0.8, opacity: 0, y: 200 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       onMouseDown={() => onFocus(app.id)}
       onTouchStart={() => onFocus(app.id)}
@@ -112,8 +112,8 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
             position: 'relative'
           }}
         >
-          <button 
-            type="button"
+          <div 
+            role="button"
             onClick={handleClose} 
             onTouchStart={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
@@ -133,7 +133,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
             }}
           >
             <span style={{ fontSize: '18px', marginTop: '-2px' }}>❮</span> Back
-          </button>
+          </div>
 
           <span style={{ 
             fontWeight: '600', 
