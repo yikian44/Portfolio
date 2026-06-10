@@ -24,6 +24,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
   };
 
   const handleClose = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     audioManager.playWindowClose();
     onClose(app.id);
@@ -112,6 +113,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
           }}
         >
           <button 
+            type="button"
             onClick={handleClose} 
             style={{ 
               position: 'absolute',
