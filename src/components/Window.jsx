@@ -60,7 +60,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
         opacity: 1,
         ...(forceMaximized ? { x: 0, y: 0, width: '100%', height: '100%' } : { width: size.width, height: size.height })
       }}
-      exit={{ scale: 0.8, opacity: 0, y: 200 }}
+      exit={isMobile ? { opacity: 0, transition: { duration: 0.15 } } : { scale: 0.8, opacity: 0, y: 200 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       onMouseDown={() => onFocus(app.id)}
       onTouchStart={() => onFocus(app.id)}
@@ -102,7 +102,7 @@ export default function Window({ app, isActive, onClose, onMinimize, onFocus, zI
           style={{
             height: '55px',
             background: 'var(--window-bg)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: isMobile ? 'none' : 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
