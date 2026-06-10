@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
+
+/* Default (Dark Blueprint Theme) */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', 'Share Tech Mono', sans-serif;
+
+  --blueprint-bg: #040c1b;
+  --blueprint-grid-primary: rgba(0, 210, 255, 0.08);
+  --blueprint-grid-secondary: rgba(0, 210, 255, 0.03);
+  --blueprint-color: #00d2ff;
+  --blueprint-color-glow: rgba(0, 210, 255, 0.35);
+
+  --text-color: #e6f7ff;
+  --text-muted: rgba(0, 210, 255, 0.55);
+
+  --glass-bg: rgba(4, 12, 27, 0.8);
+  --glass-border: rgba(0, 210, 255, 0.25);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+
+  --dock-bg: rgba(4, 12, 27, 0.85);
+  --window-bg: rgba(3, 10, 22, 0.9);
+  --icon-glass-bg: rgba(0, 210, 255, 0.04);
+  --icon-glass-border: rgba(0, 210, 255, 0.2);
+  --icon-glass-shadow: rgba(0, 210, 255, 0.1);
+  --icon-text-shadow: 0 0 6px rgba(0, 210, 255, 0.6);
+
+  /* Adaptive Icon Colors (Dark mode) */
+  --icon-about-color: #60a5fa;
+  --icon-projects-color: #fbbf24;
+  --icon-gallery-color: #ff6b8b;
+  --icon-contact-color: #34d399;
+
+  --icon-about-glow: rgba(96, 165, 250, 0.4);
+  --icon-projects-glow: rgba(251, 191, 36, 0.4);
+  --icon-gallery-glow: rgba(255, 107, 139, 0.4);
+  --icon-contact-glow: rgba(52, 211, 153, 0.4);
+
+  /* Theme adaptive container & component variables */
+  --icon-bg: rgba(3, 10, 22, 0.7);
+  --icon-hover-bg: rgba(0, 210, 255, 0.08);
+  --icon-active-bg: rgba(0, 210, 255, 0.12);
+  --window-content-bg: rgba(3, 10, 22, 0.55);
+
+  --block-bg: rgba(255, 255, 255, 0.05);
+  --block-border: rgba(255, 255, 255, 0.1);
+  --block-hover-bg: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Blueprint Theme (Cyan/Blue blueprint ink on pale grid paper) */
+body.light {
+  --blueprint-bg: #e2ebf5;
+  --blueprint-grid-primary: rgba(30, 64, 175, 0.07);
+  --blueprint-grid-secondary: rgba(30, 64, 175, 0.035);
+  --blueprint-color: #1e40af;
+  --blueprint-color-glow: rgba(30, 64, 175, 0.15);
+
+  --text-color: #0f172a;
+  --text-muted: rgba(30, 64, 175, 0.65);
+
+  --glass-bg: rgba(226, 235, 245, 0.85);
+  --glass-border: rgba(30, 64, 175, 0.3);
+  --glass-shadow: 0 12px 30px rgba(30, 64, 175, 0.1);
+
+  --dock-bg: rgba(226, 235, 245, 0.9);
+  --window-bg: rgba(226, 235, 245, 0.95);
+  --icon-glass-bg: rgba(30, 64, 175, 0.05);
+  --icon-glass-border: rgba(30, 64, 175, 0.25);
+  --icon-glass-shadow: rgba(30, 64, 175, 0.05);
+  --icon-text-shadow: none;
+
+  /* Adaptive Icon Colors (Light mode) */
+  --icon-about-color: #1d4ed8;
+  --icon-projects-color: #b45309;
+  --icon-gallery-color: #be185d;
+  --icon-contact-color: #047857;
+
+  --icon-about-glow: rgba(29, 78, 216, 0.15);
+  --icon-projects-glow: rgba(180, 83, 9, 0.15);
+  --icon-gallery-glow: rgba(190, 24, 93, 0.15);
+  --icon-contact-glow: rgba(4, 120, 87, 0.15);
+
+  /* Theme adaptive container & component variables */
+  --icon-bg: rgba(226, 235, 245, 0.75);
+  --icon-hover-bg: rgba(30, 64, 175, 0.08);
+  --icon-active-bg: rgba(30, 64, 175, 0.12);
+  --window-content-bg: rgba(226, 235, 245, 0.6);
+
+  --block-bg: rgba(30, 64, 175, 0.04);
+  --block-border: rgba(30, 64, 175, 0.15);
+  --block-hover-bg: rgba(30, 64, 175, 0.09);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-family);
+  user-select: none;
+  cursor: none !important;
+}
+
+body,
+html,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--blueprint-bg);
+  background-image:
+    linear-gradient(var(--blueprint-grid-primary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blueprint-grid-primary) 1px, transparent 1px),
+    linear-gradient(var(--blueprint-grid-secondary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--blueprint-grid-secondary) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-position: center center;
+  color: var(--text-color);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 0px;
+  /* Sharp corners for drafting blocks */
+  position: relative;
+}
+
+/* Custom Scrollbar for CAD windows */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 1px dashed var(--glass-border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--blueprint-color);
+  opacity: 0.5;
+}
+
+/* Mobile Overrides */
+@media (max-width: 768px) {
+  * {
+    cursor: auto !important;
+  }
+  
+  /* Hide custom cursor on mobile */
+  .custom-cursor {
+    display: none !important;
+  }
+}
