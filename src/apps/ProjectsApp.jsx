@@ -7,6 +7,14 @@ import sedapImg from '../assets/sedap.jpg.jpeg';
 export default function ProjectsApp() {
   const projects = [
     {
+      title: 'Jalan Square',
+      desc: 'Jalan Square is a collaborative travel-planning app for Malaysian users that combines destination discovery, group voting, itinerary management, budgeting, and communication into one unified experience.',
+      img: '/jalan-square.png.png',
+      tags: ['Figma'],
+      live: 'https://www.figma.com/design/UvyZ4mWLooxRDjwbhJFRAj/Jalan-Square?node-id=451-610&t=ncZBAI6drbrumeG4-1',
+      github: '#'
+    },
+    {
       title: 'Imperfect Vessel',
       desc: 'Imperfect Vessel is an interactive web experience that explores perfectionism, self-doubt, and self-acceptance through the philosophies of Wabi-Sabi and Kintsugi. Users create abstract portraits by arranging fragmented shapes, textures, and colors, embracing imperfection as part of the creative process. Inspired by Pablo Picasso’s cubist portraits, the project encourages users to let go of control and appreciate beauty in flaws through a calm, reflective digital experience.',
       img: '/imperfect-vessel.jpg',
