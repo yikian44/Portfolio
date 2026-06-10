@@ -1,7 +1,9 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { useMediaQuery } from '../utils/useMediaQuery';
 
 export default function WireframeLogo() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const containerRef = useRef(null);
   
   // Mouse position tracking
@@ -9,13 +11,14 @@ export default function WireframeLogo() {
   const mouseY = useMotionValue(0.5);
 
   useEffect(() => {
+    if (isMobile) return;
     const handleMouseMove = (e) => {
       mouseX.set(e.clientX / window.innerWidth);
       mouseY.set(e.clientY / window.innerHeight);
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
+  }, [mouseX, mouseY, isMobile]);
 
   // Map mouse position to rotation with a spring for smooth physics
   const springConfig = { damping: 20, stiffness: 100 };
@@ -49,11 +52,15 @@ export default function WireframeLogo() {
         }}
       >
         {/* Core sphere/gyro rings */}
-        <Ring delay={0} duration={20} axis="Z" />
-        <Ring delay={0} duration={25} axis="X" />
-        <Ring delay={0} duration={15} axis="Y" size={0.8} />
-        <Ring delay={0} duration={30} axis="Z" size={0.6} reverse />
-        <Ring delay={0} duration={18} axis="X" size={0.4} reverse />
+        <Ring delay={0} duration={20} axis="Z" isMobile={isMobile} />
+        {!isMobile && (
+          <>
+            <Ring delay={0} duration={25} axis="X" />
+            <Ring delay={0} duration={15} axis="Y" size={0.8} />
+            <Ring delay={0} duration={30} axis="Z" size={0.6} reverse />
+          </>
+        )}
+        <Ring delay={0} duration={18} axis="X" size={0.4} reverse isMobile={isMobile} />
         
         {/* Tech crosshairs in center */}
         <div style={{
@@ -96,7 +103,7 @@ export default function WireframeLogo() {
   );
 }
 
-function Ring({ delay, duration, axis, size = 1, reverse = false }) {
+function Ring({ delay, duration, axis, size = 1, reverse = false, isMobile = false }) {
   const rotateProp = `rotate${axis}`;
   const endAngle = reverse ? -360 : 360;
 
@@ -120,12 +127,16 @@ function Ring({ delay, duration, axis, size = 1, reverse = false }) {
         border: '1px solid var(--blueprint-color)',
         opacity: 0.25,
         transformStyle: 'preserve-3d',
-        boxShadow: 'inset 0 0 15px rgba(0, 210, 255, 0.1), 0 0 15px rgba(0, 210, 255, 0.1)',
+        boxShadow: isMobile ? 'none' : 'inset 0 0 15px rgba(0, 210, 255, 0.1), 0 0 15px rgba(0, 210, 255, 0.1)',
       }}
     >
       {/* Decorative nodes on the ring */}
-      <div style={{ position: 'absolute', top: '-3px', left: '50%', width: '6px', height: '6px', background: 'var(--blueprint-color)', borderRadius: '50%', transform: 'translateX(-50%)', boxShadow: '0 0 5px var(--blueprint-color-glow)' }} />
-      <div style={{ position: 'absolute', bottom: '-3px', left: '50%', width: '6px', height: '6px', background: 'var(--blueprint-color)', borderRadius: '50%', transform: 'translateX(-50%)', boxShadow: '0 0 5px var(--blueprint-color-glow)' }} />
+      {!isMobile && (
+        <>
+          <div style={{ position: 'absolute', top: '-3px', left: '50%', width: '6px', height: '6px', background: 'var(--blueprint-color)', borderRadius: '50%', transform: 'translateX(-50%)', boxShadow: '0 0 5px var(--blueprint-color-glow)' }} />
+          <div style={{ position: 'absolute', bottom: '-3px', left: '50%', width: '6px', height: '6px', background: 'var(--blueprint-color)', borderRadius: '50%', transform: 'translateX(-50%)', boxShadow: '0 0 5px var(--blueprint-color-glow)' }} />
+        </>
+      )}
     </motion.div>
   );
 }

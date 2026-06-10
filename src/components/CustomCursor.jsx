@@ -12,6 +12,8 @@ export default function CustomCursor() {
   const cursorY = useMotionValue(-100);
 
   useEffect(() => {
+    if (isMobile) return;
+
     const moveCursor = (e) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
@@ -44,7 +46,7 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [cursorX, cursorY, isVisible]);
+  }, [cursorX, cursorY, isVisible, isMobile]);
 
   if (isMobile || !isVisible) return null;
 
