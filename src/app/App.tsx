@@ -5,34 +5,16 @@ import * as THREE from "three";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
+import { RouterProvider, createHashRouter, Outlet, useOutletContext, useNavigate, useLocation } from "react-router";
 import logoImg from "@/imports/kian-blueprint-logo.jpg.jpg";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import ProjectDetail from "./pages/ProjectDetail";
+import { PROJECTS as PROJECTS_DATA } from "./data/projects";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Data ──────────────────────────────────────────────────── */
-const PROJECTS = [
-  {
-    id: 1, idx: "01", title: "Meridian Finance", category: "Product Design", year: "2024",
-    img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&h=640&fit=crop&auto=format",
-    tags: ["Research", "Systems", "Prototyping"],
-  },
-  {
-    id: 2, idx: "02", title: "Forma Studio", category: "Brand & Identity", year: "2024",
-    img: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=900&h=640&fit=crop&auto=format",
-    tags: ["Brand", "Web Design", "Motion"],
-  },
-  {
-    id: 3, idx: "03", title: "Drift OS", category: "Interaction Design", year: "2023",
-    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&h=640&fit=crop&auto=format",
-    tags: ["Research", "Interaction", "HMI"],
-  },
-  {
-    id: 4, idx: "04", title: "Nucleus Health", category: "Mobile App", year: "2023",
-    img: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&h=640&fit=crop&auto=format",
-    tags: ["Research", "UI Design", "Access."],
-  },
-] as const;
+/* ─── Data (re-exported from data/projects.ts) ──────────────── */
+const PROJECTS = PROJECTS_DATA;
 
 const ROLES = ["UI/UX Designer", "Creative Technologist", "WebGL Developer", "Design Systems Lead"];
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@!%";
@@ -435,6 +417,8 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 60);
@@ -442,7 +426,6 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -450,7 +433,12 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 320);
+    if (pathname !== "/") {
+      navigate("/");
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 400);
+    } else {
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 320);
+    }
   };
 
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
@@ -675,6 +663,7 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
 function ProjectCard({ project, isDark, primaryColor, isTouch }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string; isTouch: boolean;
 }) {
+  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const title = useTextScramble(project.title, hovered);
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
@@ -705,10 +694,12 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
         background: isDark ? "rgba(20,24,40,0.6)" : "rgba(212,204,208,0.55)",
         transition: "border-color 0.3s ease",
         transformStyle: "preserve-3d",
+        cursor: "pointer",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={(e) => { setHovered(false); onTiltLeave(e); }}
       onMouseMove={onTiltMove}
+      onClick={() => navigate(`/project/${project.slug}`)}
       data-hover
     >
       {/* Image */}
@@ -786,13 +777,20 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
 function MobileProjectCard({ project, isDark, primaryColor }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string;
 }) {
+  const navigate = useNavigate();
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.32)" : "rgba(15,12,14,0.3)";
   return (
-    <div className="overflow-hidden" style={{
-      borderWidth: "1px", borderStyle: "solid",
-      borderColor: isDark ? "rgba(91,134,239,0.14)" : "rgba(22,64,211,0.12)",
-    }}>
+    <div
+      className="overflow-hidden"
+      onClick={() => navigate(`/project/${project.slug}`)}
+      style={{
+        cursor: "pointer",
+        borderWidth: "1px", borderStyle: "solid",
+        borderColor: isDark ? "rgba(91,134,239,0.14)" : "rgba(22,64,211,0.12)",
+      }}
+      data-hover
+    >
       <div className="relative overflow-hidden" style={{ height: "52vw", minHeight: "180px", maxHeight: "260px" }}>
         <img src={project.img} alt={project.title} className="w-full h-full object-cover"
           style={{ filter: isDark ? "saturate(0.6) contrast(1.1)" : "saturate(0.7) contrast(1.05)" }} />
@@ -1208,8 +1206,15 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
   );
 }
 
-/* ─── App ───────────────────────────────────────────────────── */
-export default function App() {
+/* ─── Outlet context type ───────────────────────────────────── */
+export interface OutletCtx {
+  isDark: boolean;
+  primaryColor: string;
+  isTouch: boolean;
+}
+
+/* ─── Root layout — shared across all pages ─────────────────── */
+function Root() {
   const [isDark, setIsDark] = useState(false);
   const isTouch = useIsTouch();
   const primaryColor = isDark ? "#5b86ef" : "#1640d3";
@@ -1225,6 +1230,8 @@ export default function App() {
     setTimeout(() => root.classList.remove("theme-transitioning"), 650);
   }, []);
 
+  const ctx: OutletCtx = { isDark, primaryColor, isTouch };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background">
       <FilmGrain isDark={isDark} />
@@ -1232,12 +1239,36 @@ export default function App() {
       {!isTouch && <Cursor primaryColor={primaryColor} />}
       <BlueprintGrid primaryColor={primaryColor} />
       <Nav isDark={isDark} onToggleDark={toggleDark} primaryColor={primaryColor} />
-      <main>
-        <Hero isDark={isDark} primaryColor={primaryColor} />
-        <WorkSection isDark={isDark} primaryColor={primaryColor} isTouch={isTouch} />
-        <AboutSection isDark={isDark} primaryColor={primaryColor} />
-        <ContactSection isDark={isDark} primaryColor={primaryColor} isTouch={isTouch} />
-      </main>
+      <Outlet context={ctx} />
     </div>
   );
+}
+
+/* ─── Portfolio home page ───────────────────────────────────── */
+function PortfolioPage() {
+  const { isDark, primaryColor, isTouch } = useOutletContext<OutletCtx>();
+  return (
+    <main>
+      <Hero isDark={isDark} primaryColor={primaryColor} />
+      <WorkSection isDark={isDark} primaryColor={primaryColor} isTouch={isTouch} />
+      <AboutSection isDark={isDark} primaryColor={primaryColor} />
+      <ContactSection isDark={isDark} primaryColor={primaryColor} isTouch={isTouch} />
+    </main>
+  );
+}
+
+/* ─── Router + App ──────────────────────────────────────────── */
+const router = createHashRouter([
+  {
+    path: "/",
+    Component: Root,
+    children: [
+      { index: true, Component: PortfolioPage },
+      { path: "project/:slug", Component: ProjectDetail },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
