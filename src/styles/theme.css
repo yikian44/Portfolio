@@ -193,6 +193,14 @@
 }
 
 /* Lenis smooth scrolling compatibility */
+html {
+  overflow-y: scroll;
+}
+
+body {
+  overflow-y: hidden;
+}
+
 html.lenis, html.lenis body {
   height: auto !important;
 }
