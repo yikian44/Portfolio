@@ -606,6 +606,23 @@ function HeroCanvas({ isDark, scrollProgressRef }: { isDark: boolean; scrollProg
    Letters reveal via clip-path wipe (not opacity/y).
    Subtitle uses TypewriterText cycling component.
    ScrollTrigger parallax on canvas vs text block.           */
+function DarkToggleIcon({ isDark }: { isDark: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      {isDark ? (
+        <>
+          <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.1" />
+          <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.9 2.9l1 1M10.1 10.1l1 1M10.1 2.9l-1 1M3.9 10.1l-1 1"
+            stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+        </>
+      ) : (
+        <path d="M11.5 8.5A5 5 0 1 1 5.5 2.5a3.5 3.5 0 0 0 6 6z"
+          stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
+
 function Nav({ isDark, onToggleDark, primaryColor }: {
   isDark: boolean; onToggleDark: () => void; primaryColor: string;
 }) {
