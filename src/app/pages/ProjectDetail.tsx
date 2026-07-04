@@ -80,20 +80,20 @@ export default function ProjectDetail() {
           src={project.heroImg}
           alt={project.title}
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: isDark ? "saturate(0.55) contrast(1.1)" : "saturate(0.65) contrast(1.05)" }}
         />
         {/* Gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.45) 100%)",
+            background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%, rgba(0,0,0,0.2) 100%)",
+            pointerEvents: "none"
           }}
         />
 
         {/* Back button — top left */}
         <Link
           to="/"
-          className="absolute top-24 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
+          className="absolute top-36 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
             background: "rgba(0,0,0,0.28)",
@@ -120,10 +120,10 @@ export default function ProjectDetail() {
 
         {/* View project link — top right */}
         <a
-          href="#"
+          href={project.tagline.replace('Live Preview: ', '')}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-24 right-8 md:right-14 flex items-center gap-2 z-10 transition-all duration-300"
+          className="absolute top-36 right-8 md:right-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
             background: "rgba(0,0,0,0.28)",
@@ -149,18 +149,23 @@ export default function ProjectDetail() {
         </a>
 
         {/* Hero content — bottom */}
-        <div className="pd-hero-content absolute bottom-0 left-0 right-0 px-8 md:px-14 pb-10">
+        <div className="pd-hero-content absolute bottom-0 left-0 right-0 px-8 md:px-14 pb-10 pointer-events-none">
           <span className="font-mono text-[9px] uppercase tracking-[0.3em] block mb-3"
             style={{ color: primaryColor }}>
             {project.idx} — {project.category}
           </span>
           <h1
             className="font-display font-bold leading-[0.88] mb-4"
-            style={{ fontSize: "clamp(2.5rem, 7vw, 6rem)", letterSpacing: "-0.025em", color: textFg }}
+            style={{ 
+              fontSize: "clamp(2.5rem, 7vw, 6rem)", 
+              letterSpacing: "-0.025em", 
+              color: "#ffffff",
+              textShadow: "0 4px 20px rgba(0,0,0,0.4)"
+            }}
           >
             {project.title}
           </h1>
-          <p className="font-body text-base max-w-xl" style={{ color: bodyColor }}>
+          <p className="font-body text-base max-w-xl" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 2px 10px rgba(0,0,0,0.4)" }}>
             {project.tagline}
           </p>
         </div>
@@ -226,7 +231,6 @@ export default function ProjectDetail() {
               className="w-full object-cover"
               style={{
                 height: "clamp(240px, 40vw, 520px)",
-                filter: isDark ? "saturate(0.6) contrast(1.05)" : "saturate(0.7) contrast(1.02)",
               }}
             />
           </div>
