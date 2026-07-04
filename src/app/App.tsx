@@ -459,7 +459,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
         <div className="px-8 md:px-14 flex items-center justify-between">
           <button 
             onClick={() => setIsLogoExpanded(true)}
-            className="w-16 h-16 overflow-hidden rounded-md cursor-zoom-in hover:scale-105 transition-transform duration-300"
+            className="w-12 h-12 overflow-hidden rounded-md cursor-zoom-in hover:scale-105 transition-transform duration-300"
             data-hover
             aria-label="Enlarge logo"
           >
@@ -516,7 +516,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
       >
         {/* Top row */}
         <div className="flex items-center justify-between px-8 pt-6">
-          <div className="w-16 h-16 overflow-hidden rounded-md">
+          <div className="w-12 h-12 overflow-hidden rounded-md">
             <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
           </div>
           <button onClick={() => setMenuOpen(false)} className="w-10 h-10 flex items-center justify-center"
