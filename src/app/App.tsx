@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, MouseEvent } from "react";
+import { useState, useEffect, useRef, useCallback, MouseEvent, createContext, useContext } from "react";
 import { Linkedin, BookMarked, Mail, ArrowRight, ArrowUpRight, ArrowUp, ChevronDown, Globe, Clock, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import * as THREE from "three";
@@ -18,6 +18,12 @@ const PROJECTS = PROJECTS_DATA;
 
 const ROLES = ["UI/UX Designer", "Creative Technologist", "WebGL Developer", "Design Systems Lead"];
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@!%";
+
+/* ─── Transition Context ────────────────────────────────────── */
+export const TransitionContext = createContext<{ transitionTo: (path: string) => void }>({
+  transitionTo: () => {}
+});
+export const useTransition = () => useContext(TransitionContext);
 
 /* ─── Lenis ─────────────────────────────────────────────────── */
 function useLenis() {
@@ -205,7 +211,7 @@ function MouseGlow({ isDark, primaryColor }: { isDark: boolean; primaryColor: st
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
   return (
-    <div ref={ref} className="fixed top-0 left-0 pointer-events-none z-[2]" style={{
+    <div ref={ref} className="mouse-glow fixed top-0 left-0 pointer-events-none z-[2]" style={{
       width: "500px", height: "500px", borderRadius: "50%",
       background: `radial-gradient(circle, ${primaryColor}18 0%, transparent 65%)`,
       mixBlendMode: isDark ? "screen" : "multiply",
@@ -282,9 +288,9 @@ function Cursor({ primaryColor }: { primaryColor: string }) {
 
   return (
     <>
-      <div ref={dotRef} className="fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[9999]"
+      <div ref={dotRef} className="cursor-dot fixed top-0 left-0 w-1.5 h-1.5 rounded-full pointer-events-none z-[9999]"
         style={{ background: primaryColor }} />
-      <div ref={ringRef} className="fixed top-0 left-0 rounded-full border pointer-events-none z-[9998]"
+      <div ref={ringRef} className="cursor-ring fixed top-0 left-0 rounded-full border pointer-events-none z-[9998]"
         style={{ transition: "width 0.25s ease, height 0.25s ease, border-color 0.2s ease" }} />
     </>
   );
@@ -293,7 +299,7 @@ function Cursor({ primaryColor }: { primaryColor: string }) {
 /* ─── Blueprint Grid ────────────────────────────────────────── */
 function BlueprintGrid({ primaryColor }: { primaryColor: string }) {
   return (
-    <div className="fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.14 }}>
+    <div className="blueprint-grid fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.14 }}>
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="sg" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -311,7 +317,7 @@ function BlueprintGrid({ primaryColor }: { primaryColor: string }) {
 }
 
 /* ─── Three.js Hero Canvas ──────────────────────────────────── */
-function HeroCanvas({ isDark }: { isDark: boolean }) {
+function HeroCanvas({ isDark, scrollProgressRef }: { isDark: boolean; scrollProgressRef?: React.MutableRefObject<number> }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const lineMatRefs = useRef<THREE.LineBasicMaterial[]>([]);
   const pMatRef = useRef<THREE.PointsMaterial | null>(null);
@@ -360,6 +366,22 @@ function HeroCanvas({ isDark }: { isDark: boolean }) {
       animId = requestAnimationFrame(animate);
       timer.update();
       const t = timer.getElapsed();
+
+      if (scrollProgressRef) {
+        const prog = scrollProgressRef.current;
+        const fade = Math.max(0, 1 - prog * 1.4);
+        const scale = Math.max(0.001, 1 - prog * 0.35);
+
+        ico.scale.setScalar(scale);
+        oct.scale.setScalar(scale);
+        box.scale.setScalar(scale);
+
+        if (lineMatRefs.current[0]) lineMatRefs.current[0].opacity = fade * 0.28;
+        if (lineMatRefs.current[1]) lineMatRefs.current[1].opacity = fade * 0.16;
+        if (lineMatRefs.current[2]) lineMatRefs.current[2].opacity = fade * 0.22;
+        if (pMatRef.current) pMatRef.current.opacity = fade * 0.5;
+      }
+
       ico.rotation.set(t * 0.12, t * 0.18, 0);
       oct.rotation.set(t * 0.1, t * 0.22, 0);
       box.rotation.set(t * 0.3, t * 0.2, 0);
@@ -583,6 +605,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
 function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string }) {
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.35)" : "rgba(15,12,14,0.28)";
+  const scrollProgressRef = useRef(0);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -606,6 +629,10 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
         y: -60, ease: "none",
         scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: true },
       });
+      ScrollTrigger.create({
+        trigger: "#hero", start: "top top", end: "bottom top", scrub: true,
+        onUpdate: (self) => { scrollProgressRef.current = self.progress; }
+      });
     });
     return () => ctx.revert();
   }, []);
@@ -614,7 +641,7 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
     <section id="hero" className="relative z-10 min-h-screen flex flex-col justify-between px-8 md:px-14 pt-28 pb-10">
       {/* Three.js canvas in isolated overflow container */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <HeroCanvas isDark={isDark} />
+        <HeroCanvas isDark={isDark} scrollProgressRef={scrollProgressRef} />
       </div>
 
       {/* Top meta */}
@@ -683,8 +710,8 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
 function ProjectCard({ project, isDark, primaryColor, isTouch }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string; isTouch: boolean;
 }) {
-  const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
+  const { transitionTo } = useTransition();
   const title = useTextScramble(project.title, hovered);
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.32)" : "rgba(15,12,14,0.3)";
@@ -719,7 +746,7 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={(e) => { setHovered(false); onTiltLeave(e); }}
       onMouseMove={onTiltMove}
-      onClick={() => navigate(`/project/${project.slug}`)}
+      onClick={() => transitionTo(`/project/${project.slug}`)}
       data-hover
     >
       {/* Image */}
@@ -796,13 +823,13 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
 function MobileProjectCard({ project, isDark, primaryColor }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string;
 }) {
-  const navigate = useNavigate();
+  const { transitionTo } = useTransition();
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.32)" : "rgba(15,12,14,0.3)";
   return (
     <div
       className="overflow-hidden"
-      onClick={() => navigate(`/project/${project.slug}`)}
+      onClick={() => transitionTo(`/project/${project.slug}`)}
       style={{
         cursor: "pointer",
         borderWidth: "1px", borderStyle: "solid",
@@ -1225,21 +1252,155 @@ export interface OutletCtx {
   isTouch: boolean;
 }
 
+/* ─── Preloader ─────────────────────────────────────────────── */
+function Preloader({ onComplete, isDark }: { onComplete: () => void; isDark: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.to(el, {
+          yPercent: -100, duration: 0.8, ease: "power3.inOut",
+          onComplete
+        });
+      }
+    });
+
+    tl.fromTo(".preloader-char",
+      { clipPath: "inset(100% 0 0 0)", y: 20 },
+      { clipPath: "inset(0% 0 0 0)", y: 0, duration: 0.8, ease: "power3.out", stagger: 0.1, delay: 0.2 }
+    )
+    .fromTo(".preloader-meta",
+      { opacity: 0 },
+      { opacity: 1, duration: 0.6, ease: "power2.out" }, "-=0.2"
+    )
+    .fromTo(".preloader-line",
+      { scaleX: 0, transformOrigin: "left" },
+      { scaleX: 1, duration: 1.2, ease: "power4.inOut" }, "-=0.2"
+    );
+
+    return () => { tl.kill(); };
+  }, [onComplete]);
+
+  const bgColor = isDark ? "#0c0f1e" : "#d4ccd0";
+  const textFg = isDark ? "#dce3f6" : "#0f0c0e";
+
+  return (
+    <div ref={containerRef} className="fixed inset-0 z-[99999] flex flex-col items-center justify-center pointer-events-none" style={{ background: bgColor }}>
+      <div className="flex flex-col items-center">
+        <div className="flex overflow-hidden pb-2">
+          {["K", "I", "A", "N"].map((c, i) => (
+            <span key={i} className="preloader-char font-display font-bold leading-none select-none" style={{ fontSize: "clamp(3rem, 10vw, 6rem)", color: textFg }}>
+              {c}
+            </span>
+          ))}
+        </div>
+        <div className="preloader-meta mt-4 font-mono text-[10px] uppercase tracking-widest text-center" style={{ color: textFg, opacity: 0 }}>
+          <p>Portfolio</p>
+          <p className="mt-1" style={{ opacity: 0.6 }}>Loading experiences...</p>
+        </div>
+        <div className="preloader-line mt-8 h-px w-32" style={{ background: textFg }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Live Data ─────────────────────────────────────────────── */
+function LiveData({ isDark, primaryColor }: { isDark: boolean; primaryColor: string }) {
+  const timeRef = useRef<HTMLSpanElement>(null);
+  const coordRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const updateTime = () => {
+      if (timeRef.current) {
+        const d = new Date();
+        timeRef.current.textContent = d.toLocaleTimeString('en-US', { hour12: false });
+      }
+    };
+    const tId = setInterval(updateTime, 1000);
+    updateTime();
+
+    const onMove = (e: globalThis.MouseEvent) => {
+      if (coordRef.current) {
+        coordRef.current.textContent = `${e.clientX} × ${e.clientY}`;
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+
+    return () => { clearInterval(tId); window.removeEventListener("mousemove", onMove); };
+  }, []);
+
+  const muted = isDark ? "rgba(220,227,246,0.3)" : "rgba(15,12,14,0.35)";
+
+  return (
+    <div className="fixed bottom-6 right-8 md:right-14 z-40 hidden md:flex flex-col items-end gap-1 font-mono text-[9px] uppercase tracking-widest pointer-events-none" style={{ color: muted }}>
+      <div className="flex items-center gap-2">
+        <Clock size={10} strokeWidth={1.5} style={{ color: primaryColor }} />
+        <span ref={timeRef}>--:--:--</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Globe size={10} strokeWidth={1.5} style={{ color: primaryColor }} />
+        <span ref={coordRef}>0 × 0</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Root layout — shared across all pages ─────────────────── */
 function Root() {
   const [isDark, setIsDark] = useState(false);
   const isTouch = useIsTouch();
   const primaryColor = isDark ? "#5b86ef" : "#1640d3";
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
+  const [preloaderDone, setPreloaderDone] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  /* Page Transition Logic */
+  const transitionTo = useCallback((path: string) => {
+    if (!overlayRef.current || pathname === path) return;
+    const el = overlayRef.current;
+    
+    gsap.fromTo(el,
+      { xPercent: 105 },
+      { 
+        xPercent: 0, duration: 0.45, ease: "power4.in",
+        onComplete: () => {
+          navigate(path);
+          window.scrollTo(0, 0);
+          const lenis = (window as any).lenis;
+          if (lenis) lenis.scrollTo(0, { immediate: true });
+          
+          gsap.to(el, { 
+            xPercent: -105, duration: 0.45, ease: "power4.out", delay: 0.1,
+            onComplete: () => gsap.set(el, { xPercent: 105 })
+          });
+        }
+      }
+    );
+  }, [navigate, pathname]);
+
+  /* Ambient Idle Mode Logic */
   useEffect(() => {
-    const lenis = (window as any).lenis;
-    if (lenis) {
-      lenis.scrollTo(0, { immediate: true });
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }, [pathname]);
+    let tId: ReturnType<typeof setTimeout>;
+    const resetIdle = () => {
+      document.body.classList.remove("ambient-mode");
+      clearTimeout(tId);
+      tId = setTimeout(() => {
+        document.body.classList.add("ambient-mode");
+      }, 6000);
+    };
+    const events = ["mousemove", "scroll", "keydown", "touchstart"];
+    events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }));
+    resetIdle();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetIdle));
+      clearTimeout(tId);
+      document.body.classList.remove("ambient-mode");
+    };
+  }, []);
 
   useLenis();
   useScrollSkew();
@@ -1255,14 +1416,38 @@ function Root() {
   const ctx: OutletCtx = { isDark, primaryColor, isTouch };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-background">
-      <FilmGrain isDark={isDark} />
-      {!isTouch && <MouseGlow isDark={isDark} primaryColor={primaryColor} />}
-      {!isTouch && <Cursor primaryColor={primaryColor} />}
-      <BlueprintGrid primaryColor={primaryColor} />
-      <Nav isDark={isDark} onToggleDark={toggleDark} primaryColor={primaryColor} />
-      <Outlet context={ctx} />
-    </div>
+    <TransitionContext.Provider value={{ transitionTo }}>
+      <div className="relative min-h-screen overflow-x-hidden bg-background">
+        <style>{`
+          .mouse-glow { transition: transform 2s ease, opacity 2s ease; }
+          .cursor-dot { transition: transform 0.8s ease, opacity 0.8s ease; }
+          .cursor-ring { transition: width 0.25s ease, height 0.25s ease, border-color 0.2s ease, opacity 1s ease; }
+          .blueprint-grid { transition: opacity 2s ease; }
+          
+          .ambient-mode .mouse-glow { transform: scale(1.8); }
+          .ambient-mode .cursor-dot { transform: scale(0); opacity: 0; }
+          .ambient-mode .cursor-ring { opacity: 0.3; }
+          .ambient-mode .blueprint-grid { opacity: 0.28 !important; }
+        `}</style>
+        {!preloaderDone && <Preloader onComplete={() => setPreloaderDone(true)} isDark={isDark} />}
+        
+        {/* Transition Overlay */}
+        <div ref={overlayRef} className="fixed inset-0 z-[10000] pointer-events-none" style={{ background: primaryColor, transform: "translateX(105%)" }} />
+
+        <FilmGrain isDark={isDark} />
+        {!isTouch && <MouseGlow isDark={isDark} primaryColor={primaryColor} />}
+        {!isTouch && <Cursor primaryColor={primaryColor} />}
+        <BlueprintGrid primaryColor={primaryColor} />
+        
+        <Nav isDark={isDark} onToggleDark={toggleDark} primaryColor={primaryColor} />
+        
+        <div style={{ opacity: preloaderDone ? 1 : 0, transition: "opacity 0.5s ease" }}>
+          <Outlet context={ctx} />
+        </div>
+        
+        <LiveData isDark={isDark} primaryColor={primaryColor} />
+      </div>
+    </TransitionContext.Provider>
   );
 }
 

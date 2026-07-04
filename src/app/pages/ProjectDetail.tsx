@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useParams, useNavigate, Link, useOutletContext } from "react-router";
+import { useTransition } from "../App";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
@@ -18,6 +19,7 @@ export default function ProjectDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { isDark, primaryColor } = useOutletContext<OutletCtx>();
+  const { transitionTo } = useTransition();
 
   const project = PROJECTS.find((p) => p.slug === slug);
   const projectIndex = PROJECTS.findIndex((p) => p.slug === slug);
@@ -91,8 +93,9 @@ export default function ProjectDetail() {
         />
 
         {/* Back button — top left */}
-        <Link
-          to="/"
+        <a
+          href="#/"
+          onClick={(e) => { e.preventDefault(); transitionTo("/"); }}
           className="absolute top-28 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
@@ -115,8 +118,8 @@ export default function ProjectDetail() {
           }}
         >
           <ArrowLeft size={13} strokeWidth={1.3} />
-          <span className="font-mono text-[9px] uppercase tracking-[0.28em]">Portfolio</span>
-        </Link>
+          <span className="font-mono text-[10px] tracking-widest uppercase mt-0.5">Portfolio</span>
+        </a>
 
         {/* View project link — top right */}
         <a
@@ -302,8 +305,9 @@ export default function ProjectDetail() {
 
       {/* ── Next project ─────────────────────────────────── */}
       <div className="pd-section" style={{ borderTop: `1px solid ${borderColor}` }}>
-        <Link
-          to={`/project/${nextProject.slug}`}
+        <a
+          href={`#/project/${nextProject.slug}`}
+          onClick={(e) => { e.preventDefault(); transitionTo(`/project/${nextProject.slug}`); }}
           className="group flex items-center justify-between px-8 md:px-14 py-10 md:py-14 transition-colors duration-300"
           style={{ background: "transparent" }}
           onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = isDark ? "rgba(91,134,239,0.04)" : "rgba(22,64,211,0.03)")}
@@ -335,7 +339,7 @@ export default function ProjectDetail() {
           >
             <ArrowRight size={16} strokeWidth={1.2} />
           </div>
-        </Link>
+        </a>
       </div>
     </div>
   );
