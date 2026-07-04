@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, MouseEvent, createContext, useContext, MutableRefObject } from "react";
-import { Linkedin, Dribbble, BookMarked, Mail, ArrowRight, ArrowUpRight, ChevronDown, Globe, Clock, Layers } from "lucide-react";
+import { Linkedin, Dribbble, BookMarked, Mail, ArrowRight, ArrowUpRight, ArrowUp, ChevronDown, Globe, Clock, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import * as THREE from "three";
 import { gsap } from "gsap";
