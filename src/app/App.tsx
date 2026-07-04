@@ -1176,16 +1176,10 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
   const bodyColor = isDark ? "rgba(220,227,246,0.65)" : "rgba(15,12,14,0.68)";
   const muted = isDark ? "rgba(220,227,246,0.35)" : "rgba(15,12,14,0.42)";
 
-  const stats = [
-    { numVal: 8, suffix: "+", label: "Years of\npractice", Icon: Clock },
-    { numVal: 40, suffix: "+", label: "Projects\ndelivered", Icon: Layers },
-    { numVal: 12, suffix: "", label: "Countries\nreached", Icon: Globe },
-  ];
-  const [counts, setCounts] = useState([0, 0, 0]);
   const skills = [
-    "User Research", "Interaction Design", "Design Systems", "Figma",
-    "Prototyping", "Motion Design", "Brand Strategy", "Front-End Dev",
-    "Design Ops", "Accessibility",
+    "UI/UX & Interaction Design", "Creative Media & Visual Design", "Figma",
+    "Adobe Creative Cloud", "LottieFiles", "React & Framer Motion", "WebGL / Three.js",
+    "FlutterFlow", "Godot", "Firebase", "Frontend Architecture", "AI Assistant Design", "Vibe Coding"
   ];
 
   useEffect(() => {
@@ -1207,21 +1201,7 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
           scrollTrigger: { trigger: el, start: "top 75%", once: true } });
       });
 
-      /* Number counters — animate via React state so re-renders don't reset */
-      stats.forEach(({ numVal }, i) => {
-        const obj = { val: 0 };
-        gsap.to(obj, {
-          val: numVal, duration: 2, ease: "power2.out",
-          onUpdate: () => {
-            setCounts(prev => {
-              const next = [...prev];
-              next[i] = Math.round(obj.val);
-              return next;
-            });
-          },
-          scrollTrigger: { trigger: el, start: "top 80%", once: true },
-        });
-      });
+
     }, el);
     return () => ctx.revert();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1237,14 +1217,7 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
             </h2>
           </div>
           <p className="font-body text-base leading-[1.9] mb-6" style={{ color: bodyColor }}>
-            I&apos;m Kian — a UI/UX designer who operates at the intersection of craft and strategy.
-            I&apos;ve led design for products used by millions, built systems that scale, and worked
-            with teams across four continents.
-          </p>
-          <p className="font-body text-base leading-[1.9]" style={{ color: muted }}>
-            My process is rooted in rigor: deep research, precise execution, and an obsession with
-            the details that make a difference. Great design is invisible when it works — undeniable
-            when it doesn&apos;t.
+            I specialize in UI/UX design and building stunning, high-precision web applications. My focus is on integrating clean vector aesthetics, highly structured layouts, and fluid micro-animations into functional digital products.
           </p>
           <div className="mt-14 relative w-24 h-24" style={{ opacity: 0.13, color: primaryColor }}>
             <div className="absolute inset-0 border border-current" />
@@ -1257,23 +1230,26 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
         </div>
 
         <div className="about-right">
-          {/* Animated stat counters */}
-          <div className="grid grid-cols-3 mb-12" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
-            {stats.map((stat, i) => (
-              <div key={i} className="pl-5 pr-3 py-1"
-                style={{ borderRight: i < 2 ? `1px solid ${primaryColor}22` : "none" }}>
-                <stat.Icon size={11} strokeWidth={1.2} className="mb-2" style={{ color: primaryColor, opacity: 0.6 }} />
-                <p className="font-display font-bold leading-none mb-1.5"
-                  style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)", color: primaryColor }}>
-                  {counts[i]}{stat.suffix}
-                </p>
-                <p className="font-mono text-[8px] uppercase tracking-widest leading-tight whitespace-pre-line"
-                  style={{ color: muted }}>{stat.label}</p>
+          {/* Education */}
+          <div className="mb-12">
+            <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-6" style={{ color: primaryColor }}>Education Background</p>
+            <div className="flex flex-col gap-6">
+              <div className="relative pl-4" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
+                <div className="absolute top-1.5 -left-1 w-2 h-2 rounded-full" style={{ background: primaryColor }} />
+                <p className="font-mono text-[8px] uppercase tracking-widest mb-1.5" style={{ color: muted }}>2024 - 2027</p>
+                <h4 className="font-display font-bold text-base leading-tight mb-1" style={{ color: textFg }}>Bachelor in Creative Media</h4>
+                <p className="font-body text-[11px]" style={{ color: muted }}>Taylor's University</p>
               </div>
-            ))}
+              <div className="relative pl-4" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
+                <div className="absolute top-1.5 -left-1 w-2 h-2 rounded-full bg-transparent border" style={{ borderColor: primaryColor }} />
+                <p className="font-mono text-[8px] uppercase tracking-widest mb-1.5" style={{ color: muted }}>2017 - 2023</p>
+                <h4 className="font-display font-bold text-base leading-tight mb-1" style={{ color: textFg }}>High School / Secondary Education</h4>
+                <p className="font-body text-[11px]" style={{ color: muted }}>Chung Hua Independent High School Klang</p>
+              </div>
+            </div>
           </div>
           <div className="h-px w-full mb-8" style={{ background: `${primaryColor}18` }} />
-          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-4" style={{ color: primaryColor }}>Expertise</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-4" style={{ color: primaryColor }}>Creative Toolkit</p>
           <div className="flex flex-wrap gap-2">
             {skills.map(skill => (
               <span key={skill} className="skill-tag font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 cursor-default"
@@ -1340,13 +1316,13 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
         </div>
         <div className="contact-links flex flex-col gap-5 items-start md:items-end">
           <Magnetic strength={0.3} disabled={isTouch}>
-            <a href="mailto:hello@kian.design"
+            <a href="mailto:kianyigan@gmail.com"
               className="group flex items-center gap-3 font-body text-base transition-colors duration-300"
               style={{ color: emailColor }} data-hover
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = primaryColor)}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = emailColor)}>
               <Mail size={15} strokeWidth={1.2} />
-              hello@kian.design
+              kianyigan@gmail.com
               <span className="transition-transform duration-300 group-hover:translate-x-1">
                 <ArrowRight size={14} strokeWidth={1.1} />
               </span>
@@ -1354,8 +1330,7 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
           </Magnetic>
           <div className="flex gap-3">
             {([
-              { href: "#", Icon: Linkedin, label: "LinkedIn" },
-              { href: "#", Icon: Dribbble, label: "Dribbble" },
+              { href: "https://www.linkedin.com/in/gan-yi-kian-6b1816365/", Icon: Linkedin, label: "LinkedIn" },
               { href: "#", Icon: BookMarked, label: "Read.cv" },
             ] as const).map(({ href, Icon, label }) => (
               <Magnetic key={label} strength={0.3} disabled={isTouch}>
@@ -1405,14 +1380,34 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
           </div>
         </div>
       </div>
-      <div className="mt-20 pt-6 flex items-center justify-between"
+      <div className="mt-20 pt-6 flex items-center relative"
         style={{ borderTop: `1px solid ${primaryColor}10` }}>
         <div className="w-7 h-7" style={{ opacity: 0.35 }}>
           <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
         </div>
-        <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: muted }}>
-          © 2025 KIAN — All rights reserved
-        </p>
+        <button
+          onClick={() => {
+            const lenis = (window as any).lenis;
+            if (lenis) {
+              lenis.scrollTo(0, { 
+                duration: 3.5, 
+                easing: (t: number) => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2 
+              });
+            } else {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className="absolute left-1/2 -translate-x-1/2 group flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest transition-colors duration-300"
+          style={{ color: muted }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = primaryColor)}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = muted)}
+          data-hover
+        >
+          Back to top
+          <span className="transition-transform duration-300 group-hover:-translate-y-1">
+            <ArrowUp size={14} strokeWidth={1.2} />
+          </span>
+        </button>
       </div>
     </section>
   );
