@@ -625,7 +625,15 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
           </p>
           <TypewriterText color={muted} />
         </div>
-
+        <div className="text-right">
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-1.5" style={{ color: muted }}>
+            Open to opportunities
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: primaryColor }} />
+            <span className="font-mono text-[9px]" style={{ color: primaryColor }}>Available now</span>
+          </div>
+        </div>
       </div>
 
       {/* Registration mark */}
