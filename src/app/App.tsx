@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, MouseEvent, createContext, useContext } from "react";
-import { Linkedin, BookMarked, Mail, ArrowRight, ArrowUpRight, ArrowUp, ChevronDown, Globe, Clock, Layers } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, MouseEvent, createContext, useContext, MutableRefObject } from "react";
+import { Linkedin, Dribbble, BookMarked, Mail, ArrowRight, ArrowUpRight, ChevronDown, Globe, Clock, Layers } from "lucide-react";
 import { motion } from "motion/react";
 import * as THREE from "three";
 import { gsap } from "gsap";
@@ -16,14 +16,199 @@ gsap.registerPlugin(ScrollTrigger);
 /* ─── Data (re-exported from data/projects.ts) ──────────────── */
 const PROJECTS = PROJECTS_DATA;
 
+/* ─── Transition context ────────────────────────────────────────
+   Provides a navigate-with-wipe function to all child components
+   so they don't need to couple directly to the overlay ref.      */
+const TransitionCtx = createContext<(path: string) => void>(() => {});
+function useTransitionNavigate() { return useContext(TransitionCtx); }
+
+/* ─── Preloader ─────────────────────────────────────────────────
+   Shows on first load. KIAN letters reveal via clip-path,
+   a progress line draws across, then the whole overlay slides up. */
+function Preloader({ onComplete }: { onComplete: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const tl = gsap.timeline({
+      delay: 0.2,
+      onComplete: () => {
+        gsap.to(ref.current, {
+          yPercent: -100, duration: 0.75, ease: "power4.in",
+          onComplete,
+        });
+      },
+    });
+    tl.fromTo(".pre-letter",
+      { clipPath: "inset(100% 0 0 0)" },
+      { clipPath: "inset(0% 0 0 0)", duration: 0.8, stagger: 0.07, ease: "power4.out" },
+    )
+    .fromTo(".pre-meta",
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: "power2.out" },
+      "-=0.3"
+    )
+    .fromTo(".pre-progress",
+      { scaleX: 0, transformOrigin: "left" },
+      { scaleX: 1, duration: 1, ease: "power3.inOut" },
+      "-=0.2"
+    );
+  }, [onComplete]);
+
+  return (
+    <div ref={ref} className="fixed inset-0 z-[300] flex flex-col justify-between px-8 md:px-14 pb-10 pt-20"
+      style={{ background: "#d4ccd0" }}>
+      {/* Blueprint grid */}
+      <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.13 }}>
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="psg" width="24" height="24" patternUnits="userSpaceOnUse">
+              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#1640d3" strokeWidth="0.3" />
+            </pattern>
+            <pattern id="plg" width="120" height="120" patternUnits="userSpaceOnUse">
+              <rect width="120" height="120" fill="url(#psg)" />
+              <path d="M 120 0 L 0 0 0 120" fill="none" stroke="#1640d3" strokeWidth="0.85" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#plg)" />
+        </svg>
+      </div>
+
+      {/* Top label */}
+      <div className="relative flex justify-between items-start">
+        <p className="pre-meta font-mono text-[9px] uppercase tracking-[0.3em] opacity-0" style={{ color: "#1640d3" }}>
+          Portfolio — 2025
+        </p>
+        <p className="pre-meta font-mono text-[9px] uppercase tracking-widest opacity-0" style={{ color: "rgba(15,12,14,0.35)" }}>
+          Loading
+        </p>
+      </div>
+
+      {/* KIAN letters */}
+      <div className="relative flex-1 flex flex-col justify-end pb-4">
+        <div className="overflow-hidden flex items-end">
+          {["K", "I", "A", "N"].map((char, i) => (
+            <span key={i} className="pre-letter block font-display font-bold leading-[0.85] select-none"
+              style={{
+                fontSize: "clamp(5rem, 20vw, 18rem)",
+                color: "#0f0c0e",
+                letterSpacing: "-0.025em",
+                clipPath: "inset(100% 0 0 0)",
+              }}>
+              {char}
+            </span>
+          ))}
+        </div>
+
+        {/* Progress */}
+        <div className="mt-5 flex items-center gap-3">
+          <p className="pre-meta font-mono text-[9px] uppercase tracking-widest opacity-0" style={{ color: "rgba(15,12,14,0.35)" }}>
+            UI/UX Designer
+          </p>
+          <div className="flex-1 h-px" style={{ background: "rgba(15,12,14,0.12)" }}>
+            <div className="pre-progress h-full" style={{ background: "#1640d3", opacity: 0.5 }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Page transition overlay ───────────────────────────────────
+   Electric-blue panel that wipes right-to-left on navigation.   */
+function TransitionOverlay({ primaryColor }: { primaryColor: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={ref} className="transition-overlay fixed inset-0 z-[250] pointer-events-none"
+      style={{ background: primaryColor, transform: "translateX(105%)" }} />
+  );
+}
+
+/* ─── Live data widget ──────────────────────────────────────────
+   Fixed bottom-right: real-time clock + cursor XY coordinates,
+   styled as a blueprint engineering status bar.                  */
+function LiveWidget({ primaryColor }: { primaryColor: string }) {
+  const [time, setTime] = useState("");
+  const pos = useRef({ x: 0, y: 0 });
+  const displayRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const tick = () => {
+      const n = new Date();
+      setTime(
+        `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}:${String(n.getSeconds()).padStart(2, "0")}`
+      );
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+
+    const onMove = (e: globalThis.MouseEvent) => {
+      pos.current = { x: e.clientX, y: e.clientY };
+      if (displayRef.current) {
+        displayRef.current.textContent =
+          `X: ${String(e.clientX).padStart(4, "0")}  Y: ${String(e.clientY).padStart(4, "0")}`;
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => { clearInterval(id); window.removeEventListener("mousemove", onMove); };
+  }, []);
+
+  return (
+    <div className="fixed bottom-5 right-8 z-[65] pointer-events-none select-none hidden md:flex flex-col items-end gap-0.5">
+      <span className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}70` }}>
+        {time}
+      </span>
+      <span ref={displayRef} className="font-mono text-[8px] uppercase tracking-widest"
+        style={{ color: `${primaryColor}45` }}>
+        X: 0000  Y: 0000
+      </span>
+    </div>
+  );
+}
+
+/* ─── Idle ambient mode ─────────────────────────────────────────
+   After 6 s of no interaction, expands the glow, dims cursor,
+   and slows the Three.js scene. Any interaction exits it.        */
+function useIdleAmbient() {
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let ambient = false;
+
+    const enter = () => {
+      ambient = true;
+      gsap.to(".ambient-glow", { scale: 1.8, opacity: 0.55, duration: 2.5, ease: "power2.inOut" });
+      gsap.to(".cursor-dot", { scale: 0, duration: 0.8, ease: "power2.in" });
+      gsap.to(".cursor-ring", { scale: 1.4, borderColor: "rgba(22,64,211,0.2)", duration: 1.5 });
+      gsap.to(".blueprint-overlay", { opacity: 0.22, duration: 2 });
+    };
+
+    const exit = () => {
+      if (!ambient) return;
+      ambient = false;
+      gsap.to(".ambient-glow", { scale: 1, opacity: 1, duration: 0.6, ease: "power2.out" });
+      gsap.to(".cursor-dot", { scale: 1, duration: 0.4 });
+      gsap.to(".cursor-ring", { scale: 1, borderColor: "rgba(22,64,211,0.45)", duration: 0.4 });
+      gsap.to(".blueprint-overlay", { opacity: 0.14, duration: 0.6 });
+    };
+
+    const reset = () => {
+      exit();
+      clearTimeout(timer);
+      timer = setTimeout(enter, 6000);
+    };
+
+    const events = ["mousemove", "scroll", "keydown", "touchstart"] as const;
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, []);
+}
+
 const ROLES = ["UI/UX Designer", "Creative Technologist", "WebGL Developer", "Design Systems Lead"];
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@!%";
-
-/* ─── Transition Context ────────────────────────────────────── */
-export const TransitionContext = createContext<{ transitionTo: (path: string) => void }>({
-  transitionTo: () => {}
-});
-export const useTransition = () => useContext(TransitionContext);
 
 /* ─── Lenis ─────────────────────────────────────────────────── */
 function useLenis() {
@@ -32,12 +217,11 @@ function useLenis() {
       duration: 1.25,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     });
-    (window as any).lenis = lenis;
     lenis.on("scroll", ScrollTrigger.update);
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
-    return () => { lenis.destroy(); gsap.ticker.remove(tick); delete (window as any).lenis; };
+    return () => { lenis.destroy(); gsap.ticker.remove(tick); };
   }, []);
 }
 
@@ -211,7 +395,7 @@ function MouseGlow({ isDark, primaryColor }: { isDark: boolean; primaryColor: st
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
   return (
-    <div ref={ref} className="mouse-glow fixed top-0 left-0 pointer-events-none z-[2]" style={{
+    <div ref={ref} className="ambient-glow fixed top-0 left-0 pointer-events-none z-[2]" style={{
       width: "500px", height: "500px", borderRadius: "50%",
       background: `radial-gradient(circle, ${primaryColor}18 0%, transparent 65%)`,
       mixBlendMode: isDark ? "screen" : "multiply",
@@ -299,7 +483,7 @@ function Cursor({ primaryColor }: { primaryColor: string }) {
 /* ─── Blueprint Grid ────────────────────────────────────────── */
 function BlueprintGrid({ primaryColor }: { primaryColor: string }) {
   return (
-    <div className="blueprint-grid fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.14 }}>
+    <div className="blueprint-overlay fixed inset-0 pointer-events-none z-0" style={{ opacity: 0.14 }}>
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="sg" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -317,7 +501,10 @@ function BlueprintGrid({ primaryColor }: { primaryColor: string }) {
 }
 
 /* ─── Three.js Hero Canvas ──────────────────────────────────── */
-function HeroCanvas({ isDark, scrollProgressRef }: { isDark: boolean; scrollProgressRef?: React.MutableRefObject<number> }) {
+function HeroCanvas({ isDark, scrollProgressRef }: {
+  isDark: boolean;
+  scrollProgressRef: MutableRefObject<number>;
+}) {
   const mountRef = useRef<HTMLDivElement>(null);
   const lineMatRefs = useRef<THREE.LineBasicMaterial[]>([]);
   const pMatRef = useRef<THREE.PointsMaterial | null>(null);
@@ -366,25 +553,21 @@ function HeroCanvas({ isDark, scrollProgressRef }: { isDark: boolean; scrollProg
       animId = requestAnimationFrame(animate);
       timer.update();
       const t = timer.getElapsed();
-
-      if (scrollProgressRef) {
-        const prog = scrollProgressRef.current;
-        const fade = Math.max(0, 1 - prog * 1.4);
-        const scale = Math.max(0.001, 1 - prog * 0.35);
-
-        ico.scale.setScalar(scale);
-        oct.scale.setScalar(scale);
-        box.scale.setScalar(scale);
-
-        if (lineMatRefs.current[0]) lineMatRefs.current[0].opacity = fade * 0.28;
-        if (lineMatRefs.current[1]) lineMatRefs.current[1].opacity = fade * 0.16;
-        if (lineMatRefs.current[2]) lineMatRefs.current[2].opacity = fade * 0.22;
-        if (pMatRef.current) pMatRef.current.opacity = fade * 0.5;
-      }
+      const sp = scrollProgressRef.current; // 0 → 1 as hero scrolls out
 
       ico.rotation.set(t * 0.12, t * 0.18, 0);
       oct.rotation.set(t * 0.1, t * 0.22, 0);
       box.rotation.set(t * 0.3, t * 0.2, 0);
+
+      // Scale-down and fade as hero scrolls away
+      const fade = Math.max(0, 1 - sp * 1.4);
+      const scl = 1 - sp * 0.35;
+      ico.scale.setScalar(scl);
+      oct.scale.setScalar(scl);
+      box.scale.setScalar(scl);
+      lineMatRefs.current.forEach(m => { m.opacity = m.opacity > 0 ? fade * 0.28 : 0; });
+      if (pMatRef.current) pMatRef.current.opacity = fade * 0.5;
+
       cur.x += (target.x - cur.x) * 0.04;
       cur.y += (target.y - cur.y) * 0.04;
       camera.position.set(cur.x, cur.y, 24);
@@ -440,7 +623,6 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLogoExpanded, setIsLogoExpanded] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -479,14 +661,9 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
         transition: "padding 0.4s ease, background 0.4s ease",
       }}>
         <div className="px-8 md:px-14 flex items-center justify-between">
-          <button 
-            onClick={() => setIsLogoExpanded(true)}
-            className="w-12 h-12 overflow-hidden rounded-md cursor-zoom-in hover:scale-105 transition-transform duration-300"
-            data-hover
-            aria-label="Enlarge logo"
-          >
+          <div className="w-9 h-9">
             <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
-          </button>
+          </div>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8 md:gap-10">
@@ -538,7 +715,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
       >
         {/* Top row */}
         <div className="flex items-center justify-between px-8 pt-6">
-          <div className="w-12 h-12 overflow-hidden rounded-md">
+          <div className="w-9 h-9">
             <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
           </div>
           <button onClick={() => setMenuOpen(false)} className="w-10 h-10 flex items-center justify-center"
@@ -568,32 +745,13 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
         {/* Footer */}
         <div className="px-8 pb-10 flex items-center justify-between">
           <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
-            © 2026 KIAN
+            © 2025 KIAN
           </p>
           <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
-            kianyigan@gmail.com
+            hello@kian.design
           </p>
         </div>
       </div>
-
-      {/* Logo Modal */}
-      {isLogoExpanded && (
-        <div 
-          className="fixed inset-0 z-[200] flex items-center justify-center cursor-zoom-out"
-          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
-          onClick={() => setIsLogoExpanded(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="w-[90vw] h-[90vh] md:w-[70vw] md:h-[80vh] flex items-center justify-center"
-          >
-            <img src={logoImg} alt="KIAN Full Logo" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
-          </motion.div>
-        </div>
-      )}
     </>
   );
 }
@@ -629,9 +787,10 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
         y: -60, ease: "none",
         scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: true },
       });
+      /* Three.js scroll progress — updates ref read by HeroCanvas */
       ScrollTrigger.create({
-        trigger: "#hero", start: "top top", end: "bottom top", scrub: true,
-        onUpdate: (self) => { scrollProgressRef.current = self.progress; }
+        trigger: "#hero", start: "top top", end: "bottom top",
+        onUpdate: (st) => { scrollProgressRef.current = st.progress; },
       });
     });
     return () => ctx.revert();
@@ -639,7 +798,7 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
 
   return (
     <section id="hero" className="relative z-10 min-h-screen flex flex-col justify-between px-8 md:px-14 pt-28 pb-10">
-      {/* Three.js canvas in isolated overflow container */}
+      {/* Three.js canvas — scroll progress drives fade/scale */}
       <div className="absolute inset-0 overflow-hidden z-0">
         <HeroCanvas isDark={isDark} scrollProgressRef={scrollProgressRef} />
       </div>
@@ -648,15 +807,15 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
       <div className="hero-meta relative z-10 flex justify-between items-start mt-4">
         <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: primaryColor }}>
-            Portfolio — 2026
+            Portfolio — 2025
           </p>
           <TypewriterText color={muted} />
         </div>
-        <div className="text-right">
-          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-1.5" style={{ color: muted }}>
+        <div className="text-right flex flex-col items-end gap-1.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em]" style={{ color: muted }}>
             Open to opportunities
           </p>
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: primaryColor }} />
             <span className="font-mono text-[9px]" style={{ color: primaryColor }}>Available now</span>
           </div>
@@ -689,10 +848,16 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
               {char}
             </span>
           ))}
-
+          <div className="ml-auto pb-2 text-right hidden md:block">
+            <p className="font-body text-sm leading-relaxed" style={{ color: muted }}>
+              Crafting digital<br />experiences that matter
+            </p>
+          </div>
         </div>
         <div className="hero-bottom flex items-center justify-between mt-5">
-          <div></div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.22em]" style={{ color: muted }}>
+            8 years — 40+ projects — 12 countries
+          </p>
           <div className="flex items-center gap-2" style={{ color: muted }}>
             <span className="font-mono text-[9px] uppercase tracking-widest">Scroll</span>
             <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}>
@@ -710,8 +875,8 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
 function ProjectCard({ project, isDark, primaryColor, isTouch }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string; isTouch: boolean;
 }) {
+  const transitionTo = useTransitionNavigate();
   const [hovered, setHovered] = useState(false);
-  const { transitionTo } = useTransition();
   const title = useTextScramble(project.title, hovered);
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.32)" : "rgba(15,12,14,0.3)";
@@ -753,6 +918,7 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
       <div className="relative overflow-hidden" style={{ flex: "0 0 56%" }}>
         <img src={project.img} alt={project.title} className="w-full h-full object-cover"
           style={{
+            filter: isDark ? "saturate(0.6) contrast(1.1)" : "saturate(0.7) contrast(1.05)",
             transform: hovered ? "scale(1.04)" : "scale(1)",
             transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1)",
           }} />
@@ -823,7 +989,7 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
 function MobileProjectCard({ project, isDark, primaryColor }: {
   project: typeof PROJECTS[number]; isDark: boolean; primaryColor: string;
 }) {
-  const { transitionTo } = useTransition();
+  const transitionTo = useTransitionNavigate();
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.32)" : "rgba(15,12,14,0.3)";
   return (
@@ -838,7 +1004,8 @@ function MobileProjectCard({ project, isDark, primaryColor }: {
       data-hover
     >
       <div className="relative overflow-hidden" style={{ height: "52vw", minHeight: "180px", maxHeight: "260px" }}>
-        <img src={project.img} alt={project.title} className="w-full h-full object-cover" />
+        <img src={project.img} alt={project.title} className="w-full h-full object-cover"
+          style={{ filter: isDark ? "saturate(0.6) contrast(1.1)" : "saturate(0.7) contrast(1.05)" }} />
         <div className="absolute inset-0" style={{
           background: isDark
             ? "linear-gradient(to bottom, transparent 50%, rgba(12,15,30,0.8))"
@@ -943,7 +1110,7 @@ function WorkSection({ isDark, primaryColor, isTouch }: {
         scrollTrigger: {
           trigger: container, start: "top top",
           end: () => `+=${track.scrollWidth - window.innerWidth}`,
-          pin: true, scrub: true, invalidateOnRefresh: true,
+          pin: true, scrub: 1.2, invalidateOnRefresh: true,
         },
       });
     }, container);
@@ -977,9 +1144,10 @@ function WorkSection({ isDark, primaryColor, isTouch }: {
             style={{ fontSize: "clamp(1rem, 2vw, 1.4rem)", letterSpacing: "-0.02em", color: textFg }}>
             Selected Work
           </h2>
+          <span className="font-mono text-[8px] uppercase tracking-widest" style={{ color: muted }}>— scroll</span>
         </div>
         <div ref={trackRef} className="flex gap-px items-center"
-          style={{ width: "max-content", paddingTop: "80px", paddingLeft: "clamp(2rem,5vw,3.5rem)", paddingRight: "clamp(2rem,5vw,3.5rem)", willChange: "transform" }}>
+          style={{ width: "max-content", paddingTop: "80px", paddingLeft: "clamp(2rem,5vw,3.5rem)", paddingRight: "clamp(2rem,5vw,3.5rem)" }}>
           {PROJECTS.map(p => (
             <ProjectCard key={p.id} project={p} isDark={isDark} primaryColor={primaryColor} isTouch={isTouch} />
           ))}
@@ -1008,10 +1176,16 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
   const bodyColor = isDark ? "rgba(220,227,246,0.65)" : "rgba(15,12,14,0.68)";
   const muted = isDark ? "rgba(220,227,246,0.35)" : "rgba(15,12,14,0.42)";
 
+  const stats = [
+    { numVal: 8, suffix: "+", label: "Years of\npractice", Icon: Clock },
+    { numVal: 40, suffix: "+", label: "Projects\ndelivered", Icon: Layers },
+    { numVal: 12, suffix: "", label: "Countries\nreached", Icon: Globe },
+  ];
+  const [counts, setCounts] = useState([0, 0, 0]);
   const skills = [
-    "UI/UX & Interaction Design", "Creative Media & Visual Design", "Figma",
-    "Adobe Creative Cloud", "LottieFiles", "React & Framer Motion", "WebGL / Three.js",
-    "FlutterFlow", "Godot", "Firebase", "Frontend Architecture", "AI Assistant Design", "Vibe Coding"
+    "User Research", "Interaction Design", "Design Systems", "Figma",
+    "Prototyping", "Motion Design", "Brand Strategy", "Front-End Dev",
+    "Design Ops", "Accessibility",
   ];
 
   useEffect(() => {
@@ -1033,7 +1207,21 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
           scrollTrigger: { trigger: el, start: "top 75%", once: true } });
       });
 
-
+      /* Number counters — animate via React state so re-renders don't reset */
+      stats.forEach(({ numVal }, i) => {
+        const obj = { val: 0 };
+        gsap.to(obj, {
+          val: numVal, duration: 2, ease: "power2.out",
+          onUpdate: () => {
+            setCounts(prev => {
+              const next = [...prev];
+              next[i] = Math.round(obj.val);
+              return next;
+            });
+          },
+          scrollTrigger: { trigger: el, start: "top 80%", once: true },
+        });
+      });
     }, el);
     return () => ctx.revert();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1049,7 +1237,14 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
             </h2>
           </div>
           <p className="font-body text-base leading-[1.9] mb-6" style={{ color: bodyColor }}>
-            I specialize in UI/UX design and building stunning, high-precision web applications. My focus is on integrating clean vector aesthetics, highly structured layouts, and fluid micro-animations into functional digital products.
+            I&apos;m Kian — a UI/UX designer who operates at the intersection of craft and strategy.
+            I&apos;ve led design for products used by millions, built systems that scale, and worked
+            with teams across four continents.
+          </p>
+          <p className="font-body text-base leading-[1.9]" style={{ color: muted }}>
+            My process is rooted in rigor: deep research, precise execution, and an obsession with
+            the details that make a difference. Great design is invisible when it works — undeniable
+            when it doesn&apos;t.
           </p>
           <div className="mt-14 relative w-24 h-24" style={{ opacity: 0.13, color: primaryColor }}>
             <div className="absolute inset-0 border border-current" />
@@ -1062,26 +1257,23 @@ function AboutSection({ isDark, primaryColor }: { isDark: boolean; primaryColor:
         </div>
 
         <div className="about-right">
-          {/* Education */}
-          <div className="mb-12">
-            <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-6" style={{ color: primaryColor }}>Education Background</p>
-            <div className="flex flex-col gap-6">
-              <div className="relative pl-4" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
-                <div className="absolute top-1.5 -left-1 w-2 h-2 rounded-full" style={{ background: primaryColor }} />
-                <p className="font-mono text-[8px] uppercase tracking-widest mb-1.5" style={{ color: muted }}>2024 - 2027</p>
-                <h4 className="font-display font-bold text-base leading-tight mb-1" style={{ color: textFg }}>Bachelor in Creative Media</h4>
-                <p className="font-body text-[11px]" style={{ color: muted }}>Taylor's University</p>
+          {/* Animated stat counters */}
+          <div className="grid grid-cols-3 mb-12" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
+            {stats.map((stat, i) => (
+              <div key={i} className="pl-5 pr-3 py-1"
+                style={{ borderRight: i < 2 ? `1px solid ${primaryColor}22` : "none" }}>
+                <stat.Icon size={11} strokeWidth={1.2} className="mb-2" style={{ color: primaryColor, opacity: 0.6 }} />
+                <p className="font-display font-bold leading-none mb-1.5"
+                  style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.8rem)", color: primaryColor }}>
+                  {counts[i]}{stat.suffix}
+                </p>
+                <p className="font-mono text-[8px] uppercase tracking-widest leading-tight whitespace-pre-line"
+                  style={{ color: muted }}>{stat.label}</p>
               </div>
-              <div className="relative pl-4" style={{ borderLeft: `1px solid ${primaryColor}22` }}>
-                <div className="absolute top-1.5 -left-1 w-2 h-2 rounded-full bg-transparent border" style={{ borderColor: primaryColor }} />
-                <p className="font-mono text-[8px] uppercase tracking-widest mb-1.5" style={{ color: muted }}>2017 - 2023</p>
-                <h4 className="font-display font-bold text-base leading-tight mb-1" style={{ color: textFg }}>High School / Secondary Education</h4>
-                <p className="font-body text-[11px]" style={{ color: muted }}>Chung Hua Independent High School Klang</p>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="h-px w-full mb-8" style={{ background: `${primaryColor}18` }} />
-          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-4" style={{ color: primaryColor }}>Creative Toolkit</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] mb-4" style={{ color: primaryColor }}>Expertise</p>
           <div className="flex flex-wrap gap-2">
             {skills.map(skill => (
               <span key={skill} className="skill-tag font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 cursor-default"
@@ -1148,13 +1340,13 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
         </div>
         <div className="contact-links flex flex-col gap-5 items-start md:items-end">
           <Magnetic strength={0.3} disabled={isTouch}>
-            <a href="mailto:kianyigan@gmail.com"
+            <a href="mailto:hello@kian.design"
               className="group flex items-center gap-3 font-body text-base transition-colors duration-300"
               style={{ color: emailColor }} data-hover
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = primaryColor)}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = emailColor)}>
               <Mail size={15} strokeWidth={1.2} />
-              kianyigan@gmail.com
+              hello@kian.design
               <span className="transition-transform duration-300 group-hover:translate-x-1">
                 <ArrowRight size={14} strokeWidth={1.1} />
               </span>
@@ -1162,7 +1354,8 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
           </Magnetic>
           <div className="flex gap-3">
             {([
-              { href: "https://www.linkedin.com/in/gan-yi-kian-6b1816365/", Icon: Linkedin, label: "LinkedIn" },
+              { href: "#", Icon: Linkedin, label: "LinkedIn" },
+              { href: "#", Icon: Dribbble, label: "Dribbble" },
               { href: "#", Icon: BookMarked, label: "Read.cv" },
             ] as const).map(({ href, Icon, label }) => (
               <Magnetic key={label} strength={0.3} disabled={isTouch}>
@@ -1212,34 +1405,14 @@ function ContactSection({ isDark, primaryColor, isTouch }: { isDark: boolean; pr
           </div>
         </div>
       </div>
-      <div className="mt-20 pt-6 flex items-center relative"
+      <div className="mt-20 pt-6 flex items-center justify-between"
         style={{ borderTop: `1px solid ${primaryColor}10` }}>
         <div className="w-7 h-7" style={{ opacity: 0.35 }}>
           <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
         </div>
-        <button
-          onClick={() => {
-            const lenis = (window as any).lenis;
-            if (lenis) {
-              lenis.scrollTo(0, { 
-                duration: 3.5, 
-                easing: (t: number) => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2 
-              });
-            } else {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          className="absolute left-1/2 -translate-x-1/2 group flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest transition-colors duration-300"
-          style={{ color: muted }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = primaryColor)}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = muted)}
-          data-hover
-        >
-          Back to top
-          <span className="transition-transform duration-300 group-hover:-translate-y-1">
-            <ArrowUp size={14} strokeWidth={1.2} />
-          </span>
-        </button>
+        <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: muted }}>
+          © 2025 KIAN — All rights reserved
+        </p>
       </div>
     </section>
   );
@@ -1252,158 +1425,18 @@ export interface OutletCtx {
   isTouch: boolean;
 }
 
-/* ─── Preloader ─────────────────────────────────────────────── */
-function Preloader({ onComplete, isDark }: { onComplete: () => void; isDark: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const tl = gsap.timeline({
-      onComplete: () => {
-        gsap.to(el, {
-          yPercent: -100, duration: 0.8, ease: "power3.inOut",
-          onComplete
-        });
-      }
-    });
-
-    tl.fromTo(".preloader-char",
-      { clipPath: "inset(100% 0 0 0)", y: 20 },
-      { clipPath: "inset(0% 0 0 0)", y: 0, duration: 0.8, ease: "power3.out", stagger: 0.1, delay: 0.2 }
-    )
-    .fromTo(".preloader-meta",
-      { opacity: 0 },
-      { opacity: 1, duration: 0.6, ease: "power2.out" }, "-=0.2"
-    )
-    .fromTo(".preloader-line",
-      { scaleX: 0, transformOrigin: "left" },
-      { scaleX: 1, duration: 1.2, ease: "power4.inOut" }, "-=0.2"
-    );
-
-    return () => { tl.kill(); };
-  }, [onComplete]);
-
-  const bgColor = isDark ? "#0c0f1e" : "#d4ccd0";
-  const textFg = isDark ? "#dce3f6" : "#0f0c0e";
-
-  return (
-    <div ref={containerRef} className="fixed inset-0 z-[99999] flex flex-col items-center justify-center pointer-events-none" style={{ background: bgColor }}>
-      <div className="flex flex-col items-center">
-        <div className="flex overflow-hidden pb-2">
-          {["K", "I", "A", "N"].map((c, i) => (
-            <span key={i} className="preloader-char font-display font-bold leading-none select-none" style={{ fontSize: "clamp(3rem, 10vw, 6rem)", color: textFg }}>
-              {c}
-            </span>
-          ))}
-        </div>
-        <div className="preloader-meta mt-4 font-mono text-[10px] uppercase tracking-widest text-center" style={{ color: textFg, opacity: 0 }}>
-          <p>Portfolio</p>
-          <p className="mt-1" style={{ opacity: 0.6 }}>Loading experiences...</p>
-        </div>
-        <div className="preloader-line mt-8 h-px w-32" style={{ background: textFg }} />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Live Data ─────────────────────────────────────────────── */
-function LiveData({ isDark, primaryColor }: { isDark: boolean; primaryColor: string }) {
-  const timeRef = useRef<HTMLSpanElement>(null);
-  const coordRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const updateTime = () => {
-      if (timeRef.current) {
-        const d = new Date();
-        timeRef.current.textContent = d.toLocaleTimeString('en-US', { hour12: false });
-      }
-    };
-    const tId = setInterval(updateTime, 1000);
-    updateTime();
-
-    const onMove = (e: globalThis.MouseEvent) => {
-      if (coordRef.current) {
-        coordRef.current.textContent = `${e.clientX} × ${e.clientY}`;
-      }
-    };
-    window.addEventListener("mousemove", onMove);
-
-    return () => { clearInterval(tId); window.removeEventListener("mousemove", onMove); };
-  }, []);
-
-  const muted = isDark ? "rgba(220,227,246,0.3)" : "rgba(15,12,14,0.35)";
-
-  return (
-    <div className="fixed bottom-6 right-8 md:right-14 z-40 hidden md:flex flex-col items-end gap-1 font-mono text-[9px] uppercase tracking-widest pointer-events-none" style={{ color: muted }}>
-      <div className="flex items-center gap-2">
-        <Clock size={10} strokeWidth={1.5} style={{ color: primaryColor }} />
-        <span ref={timeRef}>--:--:--</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Globe size={10} strokeWidth={1.5} style={{ color: primaryColor }} />
-        <span ref={coordRef}>0 × 0</span>
-      </div>
-    </div>
-  );
-}
-
 /* ─── Root layout — shared across all pages ─────────────────── */
 function Root() {
   const [isDark, setIsDark] = useState(false);
+  const [preloaderDone, setPreloaderDone] = useState(false);
   const isTouch = useIsTouch();
   const primaryColor = isDark ? "#5b86ef" : "#1640d3";
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  const [preloaderDone, setPreloaderDone] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
-
-  /* Page Transition Logic */
-  const transitionTo = useCallback((path: string) => {
-    if (!overlayRef.current || pathname === path) return;
-    const el = overlayRef.current;
-    
-    gsap.fromTo(el,
-      { xPercent: 105 },
-      { 
-        xPercent: 0, duration: 0.45, ease: "power4.in",
-        onComplete: () => {
-          navigate(path);
-          window.scrollTo(0, 0);
-          const lenis = (window as any).lenis;
-          if (lenis) lenis.scrollTo(0, { immediate: true });
-          
-          gsap.to(el, { 
-            xPercent: -105, duration: 0.45, ease: "power4.out", delay: 0.1,
-            onComplete: () => gsap.set(el, { xPercent: 105 })
-          });
-        }
-      }
-    );
-  }, [navigate, pathname]);
-
-  /* Ambient Idle Mode Logic */
-  useEffect(() => {
-    let tId: ReturnType<typeof setTimeout>;
-    const resetIdle = () => {
-      document.body.classList.remove("ambient-mode");
-      clearTimeout(tId);
-      tId = setTimeout(() => {
-        document.body.classList.add("ambient-mode");
-      }, 6000);
-    };
-    const events = ["mousemove", "scroll", "keydown", "touchstart"];
-    events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }));
-    resetIdle();
-    return () => {
-      events.forEach(e => window.removeEventListener(e, resetIdle));
-      clearTimeout(tId);
-      document.body.classList.remove("ambient-mode");
-    };
-  }, []);
+  const navigate = useNavigate();
 
   useLenis();
   useScrollSkew();
+  useIdleAmbient();
 
   const toggleDark = useCallback(() => {
     const root = document.documentElement;
@@ -1413,41 +1446,44 @@ function Root() {
     setTimeout(() => root.classList.remove("theme-transitioning"), 650);
   }, []);
 
+  /* Page transition: wipe right→cover→navigate→exit left */
+  const transitionTo = useCallback((path: string) => {
+    const overlay = overlayRef.current;
+    if (!overlay) { navigate(path); return; }
+    gsap.fromTo(overlay,
+      { x: "105%", pointerEvents: "none" },
+      {
+        x: "0%", duration: 0.45, ease: "power4.in",
+        onComplete: () => {
+          navigate(path);
+          window.scrollTo(0, 0);
+          gsap.to(overlay, {
+            x: "-105%", duration: 0.45, ease: "power4.out", delay: 0.05,
+            onComplete: () => gsap.set(overlay, { x: "105%", pointerEvents: "none" }),
+          });
+        },
+      }
+    );
+  }, [navigate]);
+
   const ctx: OutletCtx = { isDark, primaryColor, isTouch };
 
   return (
-    <TransitionContext.Provider value={{ transitionTo }}>
+    <TransitionCtx.Provider value={transitionTo}>
+      {!preloaderDone && <Preloader onComplete={() => setPreloaderDone(true)} />}
       <div className="relative min-h-screen overflow-x-hidden bg-background">
-        <style>{`
-          .mouse-glow { transition: transform 2s ease, opacity 2s ease; }
-          .cursor-dot { transition: transform 0.8s ease, opacity 0.8s ease; }
-          .cursor-ring { transition: width 0.25s ease, height 0.25s ease, border-color 0.2s ease, opacity 1s ease; }
-          .blueprint-grid { transition: opacity 2s ease; }
-          
-          .ambient-mode .mouse-glow { transform: scale(1.8); }
-          .ambient-mode .cursor-dot { transform: scale(0); opacity: 0; }
-          .ambient-mode .cursor-ring { opacity: 0.3; }
-          .ambient-mode .blueprint-grid { opacity: 0.28 !important; }
-        `}</style>
-        {!preloaderDone && <Preloader onComplete={() => setPreloaderDone(true)} isDark={isDark} />}
-        
-        {/* Transition Overlay */}
-        <div ref={overlayRef} className="fixed inset-0 z-[10000] pointer-events-none" style={{ background: primaryColor, transform: "translateX(105%)" }} />
-
         <FilmGrain isDark={isDark} />
         {!isTouch && <MouseGlow isDark={isDark} primaryColor={primaryColor} />}
         {!isTouch && <Cursor primaryColor={primaryColor} />}
         <BlueprintGrid primaryColor={primaryColor} />
-        
+        <LiveWidget primaryColor={primaryColor} />
         <Nav isDark={isDark} onToggleDark={toggleDark} primaryColor={primaryColor} />
-        
-        <div style={{ opacity: preloaderDone ? 1 : 0, transition: "opacity 0.5s ease" }}>
-          <Outlet context={ctx} />
-        </div>
-        
-        <LiveData isDark={isDark} primaryColor={primaryColor} />
+        <Outlet context={ctx} />
+        {/* Transition overlay — sits above all content */}
+        <div ref={overlayRef} className="transition-overlay fixed inset-0 z-[250]"
+          style={{ background: primaryColor, transform: "translateX(105%)", pointerEvents: "none" }} />
       </div>
-    </TransitionContext.Provider>
+    </TransitionCtx.Provider>
   );
 }
 

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useParams, useNavigate, Link, useOutletContext } from "react-router";
-import { useTransition } from "../App";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
@@ -19,7 +18,6 @@ export default function ProjectDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { isDark, primaryColor } = useOutletContext<OutletCtx>();
-  const { transitionTo } = useTransition();
 
   const project = PROJECTS.find((p) => p.slug === slug);
   const projectIndex = PROJECTS.findIndex((p) => p.slug === slug);
@@ -82,20 +80,19 @@ export default function ProjectDetail() {
           src={project.heroImg}
           alt={project.title}
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: isDark ? "saturate(0.55) contrast(1.1)" : "saturate(0.65) contrast(1.05)" }}
         />
         {/* Gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%, rgba(0,0,0,0.2) 100%)",
-            pointerEvents: "none"
+            background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.45) 100%)",
           }}
         />
 
         {/* Back button — top left */}
-        <a
-          href="#/"
-          onClick={(e) => { e.preventDefault(); transitionTo("/"); }}
+        <Link
+          to="/"
           className="absolute top-28 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
@@ -118,8 +115,8 @@ export default function ProjectDetail() {
           }}
         >
           <ArrowLeft size={13} strokeWidth={1.3} />
-          <span className="font-mono text-[10px] tracking-widest uppercase mt-0.5">Portfolio</span>
-        </a>
+          <span className="font-mono text-[9px] uppercase tracking-[0.28em]">Portfolio</span>
+        </Link>
 
         {/* View project link — top right */}
         <a
@@ -152,23 +149,18 @@ export default function ProjectDetail() {
         </a>
 
         {/* Hero content — bottom */}
-        <div className="pd-hero-content absolute bottom-0 left-0 right-0 px-8 md:px-14 pb-10 pointer-events-none">
+        <div className="pd-hero-content absolute bottom-0 left-0 right-0 px-8 md:px-14 pb-10">
           <span className="font-mono text-[9px] uppercase tracking-[0.3em] block mb-3"
             style={{ color: primaryColor }}>
             {project.idx} — {project.category}
           </span>
           <h1
             className="font-display font-bold leading-[0.88] mb-4"
-            style={{ 
-              fontSize: "clamp(2.5rem, 7vw, 6rem)", 
-              letterSpacing: "-0.025em", 
-              color: "#ffffff",
-              textShadow: "0 4px 20px rgba(0,0,0,0.4)"
-            }}
+            style={{ fontSize: "clamp(2.5rem, 7vw, 6rem)", letterSpacing: "-0.025em", color: textFg }}
           >
             {project.title}
           </h1>
-          <p className="font-body text-base max-w-xl" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 2px 10px rgba(0,0,0,0.4)" }}>
+          <p className="font-body text-base max-w-xl" style={{ color: bodyColor }}>
             {project.tagline}
           </p>
         </div>
@@ -234,6 +226,7 @@ export default function ProjectDetail() {
               className="w-full object-cover"
               style={{
                 height: "clamp(240px, 40vw, 520px)",
+                filter: isDark ? "saturate(0.6) contrast(1.05)" : "saturate(0.7) contrast(1.02)",
               }}
             />
           </div>
@@ -305,9 +298,8 @@ export default function ProjectDetail() {
 
       {/* ── Next project ─────────────────────────────────── */}
       <div className="pd-section" style={{ borderTop: `1px solid ${borderColor}` }}>
-        <a
-          href={`#/project/${nextProject.slug}`}
-          onClick={(e) => { e.preventDefault(); transitionTo(`/project/${nextProject.slug}`); }}
+        <Link
+          to={`/project/${nextProject.slug}`}
           className="group flex items-center justify-between px-8 md:px-14 py-10 md:py-14 transition-colors duration-300"
           style={{ background: "transparent" }}
           onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = isDark ? "rgba(91,134,239,0.04)" : "rgba(22,64,211,0.03)")}
@@ -339,7 +331,7 @@ export default function ProjectDetail() {
           >
             <ArrowRight size={16} strokeWidth={1.2} />
           </div>
-        </a>
+        </Link>
       </div>
     </div>
   );
