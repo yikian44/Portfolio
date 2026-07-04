@@ -28,7 +28,12 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     if (!project) { navigate("/"); return; }
-    window.scrollTo(0, 0);
+    const lenis = (window as any).lenis;
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, [slug, project, navigate]);
 
   useEffect(() => {
