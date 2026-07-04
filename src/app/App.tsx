@@ -628,6 +628,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoZoomed, setLogoZoomed] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -638,9 +639,9 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    document.body.style.overflow = (menuOpen || logoZoomed) ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
+  }, [menuOpen, logoZoomed]);
 
   const scrollTo = (id: string) => {
     setMenuOpen(false);
@@ -666,9 +667,9 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
         transition: "padding 0.4s ease, background 0.4s ease",
       }}>
         <div className="px-8 md:px-14 flex items-center justify-between">
-          <div className="w-9 h-9">
+          <button onClick={() => setLogoZoomed(true)} className="w-9 h-9 cursor-zoom-in focus:outline-none" aria-label="Zoom logo">
             <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
-          </div>
+          </button>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8 md:gap-10">
@@ -720,9 +721,9 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
       >
         {/* Top row */}
         <div className="flex items-center justify-between px-8 pt-6">
-          <div className="w-9 h-9">
+          <button onClick={() => { setMenuOpen(false); setLogoZoomed(true); }} className="w-9 h-9 cursor-zoom-in focus:outline-none" aria-label="Zoom logo">
             <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
-          </div>
+          </button>
           <button onClick={() => setMenuOpen(false)} className="w-10 h-10 flex items-center justify-center"
             style={{ color: textFg }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -757,6 +758,28 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
           </p>
         </div>
       </div>
+
+      {/* Enlarged Logo Modal */}
+      {logoZoomed && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-md cursor-zoom-out"
+          onClick={() => setLogoZoomed(false)}
+        >
+          <div className="max-w-[85vw] max-h-[85vh] relative animate-in fade-in zoom-in duration-300">
+            <img 
+              src={logoImg} 
+              alt="KIAN Logo Enlarged" 
+              className="w-full h-full max-h-[75vh] object-contain rounded-md" 
+            />
+            <button 
+              onClick={() => setLogoZoomed(false)}
+              className="absolute -top-10 right-0 text-white font-mono text-[9px] uppercase tracking-widest bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -853,16 +876,8 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
               {char}
             </span>
           ))}
-          <div className="ml-auto pb-2 text-right hidden md:block">
-            <p className="font-body text-sm leading-relaxed" style={{ color: muted }}>
-              Crafting digital<br />experiences that matter
-            </p>
-          </div>
         </div>
-        <div className="hero-bottom flex items-center justify-between mt-5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.22em]" style={{ color: muted }}>
-            8 years — 40+ projects — 12 countries
-          </p>
+        <div className="hero-bottom flex items-center justify-end mt-5">
           <div className="flex items-center gap-2" style={{ color: muted }}>
             <span className="font-mono text-[9px] uppercase tracking-widest">Scroll</span>
             <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}>
@@ -923,7 +938,6 @@ function ProjectCard({ project, isDark, primaryColor, isTouch }: {
       <div className="relative overflow-hidden" style={{ flex: "0 0 56%" }}>
         <img src={project.img} alt={project.title} className="w-full h-full object-cover"
           style={{
-            filter: isDark ? "saturate(0.6) contrast(1.1)" : "saturate(0.7) contrast(1.05)",
             transform: hovered ? "scale(1.04)" : "scale(1)",
             transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1)",
           }} />
@@ -1009,8 +1023,7 @@ function MobileProjectCard({ project, isDark, primaryColor }: {
       data-hover
     >
       <div className="relative overflow-hidden" style={{ height: "52vw", minHeight: "180px", maxHeight: "260px" }}>
-        <img src={project.img} alt={project.title} className="w-full h-full object-cover"
-          style={{ filter: isDark ? "saturate(0.6) contrast(1.1)" : "saturate(0.7) contrast(1.05)" }} />
+        <img src={project.img} alt={project.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0" style={{
           background: isDark
             ? "linear-gradient(to bottom, transparent 50%, rgba(12,15,30,0.8))"
@@ -1149,7 +1162,6 @@ function WorkSection({ isDark, primaryColor, isTouch }: {
             style={{ fontSize: "clamp(1rem, 2vw, 1.4rem)", letterSpacing: "-0.02em", color: textFg }}>
             Selected Work
           </h2>
-          <span className="font-mono text-[8px] uppercase tracking-widest" style={{ color: muted }}>— scroll</span>
         </div>
         <div ref={trackRef} className="flex gap-px items-center"
           style={{ width: "max-content", paddingTop: "80px", paddingLeft: "clamp(2rem,5vw,3.5rem)", paddingRight: "clamp(2rem,5vw,3.5rem)" }}>
