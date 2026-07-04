@@ -93,7 +93,7 @@ export default function ProjectDetail() {
         {/* Back button — top left */}
         <Link
           to="/"
-          className="absolute top-36 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
+          className="absolute top-28 left-8 md:left-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
             background: "rgba(0,0,0,0.28)",
@@ -123,7 +123,7 @@ export default function ProjectDetail() {
           href={project.tagline.replace('Live Preview: ', '')}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-36 right-8 md:right-14 flex items-center gap-2 z-10 transition-all duration-300"
+          className="absolute top-28 right-8 md:right-14 flex items-center gap-2 z-10 transition-all duration-300"
           style={{
             color: "rgba(255,255,255,0.85)",
             background: "rgba(0,0,0,0.28)",
