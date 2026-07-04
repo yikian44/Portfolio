@@ -606,6 +606,148 @@ function HeroCanvas({ isDark, scrollProgressRef }: { isDark: boolean; scrollProg
    Letters reveal via clip-path wipe (not opacity/y).
    Subtitle uses TypewriterText cycling component.
    ScrollTrigger parallax on canvas vs text block.           */
+function Nav({ isDark, onToggleDark, primaryColor }: {
+  isDark: boolean; onToggleDark: () => void; primaryColor: string;
+}) {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
+
+  const scrollTo = (id: string) => {
+    setMenuOpen(false);
+    if (pathname !== "/") {
+      navigate("/");
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 400);
+    } else {
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 320);
+    }
+  };
+
+  const textFg = isDark ? "#dce3f6" : "#0f0c0e";
+  const bgColor = isDark ? "#0c0f1e" : "#d4ccd0";
+  const mutedColor = isDark ? "rgba(220,227,246,0.4)" : "rgba(15,12,14,0.45)";
+
+  return (
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{
+        padding: scrolled ? "0.875rem 0" : "1.75rem 0",
+        background: scrolled ? (isDark ? "rgba(12,15,30,0.88)" : "rgba(212,204,208,0.88)") : "transparent",
+        backdropFilter: scrolled ? "blur(14px)" : "none",
+        borderBottom: scrolled ? `1px solid ${isDark ? "rgba(91,134,239,0.08)" : "rgba(22,64,211,0.08)"}` : "none",
+        transition: "padding 0.4s ease, background 0.4s ease",
+      }}>
+        <div className="px-8 md:px-14 flex items-center justify-between">
+          <div className="w-9 h-9">
+            <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
+          </div>
+
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-8 md:gap-10">
+            {(["work", "about", "contact"] as const).map(id => (
+              <button key={id} onClick={() => scrollTo(id)} className="group relative" data-hover>
+                <span className="font-mono text-[10px] uppercase tracking-[0.28em] transition-colors duration-300"
+                  style={{ color: mutedColor }}>
+                  {id}
+                </span>
+                <span className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300"
+                  style={{ background: primaryColor }} />
+              </button>
+            ))}
+            <button onClick={onToggleDark} data-hover
+              className="w-8 h-8 flex items-center justify-center"
+              style={{ color: mutedColor }} aria-label="Toggle dark mode">
+              <DarkToggleIcon isDark={isDark} />
+            </button>
+          </div>
+
+          {/* Mobile: dark toggle + hamburger */}
+          <div className="flex md:hidden items-center gap-3">
+            <button onClick={onToggleDark} className="w-8 h-8 flex items-center justify-center"
+              style={{ color: mutedColor }} aria-label="Toggle dark mode">
+              <DarkToggleIcon isDark={isDark} />
+            </button>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="w-8 h-8 flex flex-col items-center justify-center gap-1.5"
+              aria-label="Open menu"
+            >
+              <span className="w-5 h-px block" style={{ background: textFg }} />
+              <span className="w-5 h-px block" style={{ background: textFg }} />
+              <span className="w-3 h-px block" style={{ background: textFg }} />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile full-screen overlay menu */}
+      <div
+        className="fixed inset-0 z-[100] flex flex-col md:hidden"
+        style={{
+          background: bgColor,
+          opacity: menuOpen ? 1 : 0,
+          pointerEvents: menuOpen ? "all" : "none",
+          transition: "opacity 0.35s ease",
+        }}
+      >
+        {/* Top row */}
+        <div className="flex items-center justify-between px-8 pt-6">
+          <div className="w-9 h-9">
+            <ImageWithFallback src={logoImg} alt="KIAN" className="w-full h-full object-contain" />
+          </div>
+          <button onClick={() => setMenuOpen(false)} className="w-10 h-10 flex items-center justify-center"
+            style={{ color: textFg }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1 1l14 14M15 1L1 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Nav links */}
+        <div className="flex flex-col justify-center flex-1 px-8 gap-0">
+          {(["work", "about", "contact"] as const).map((id, i) => (
+            <button key={id} onClick={() => scrollTo(id)}
+              className="flex items-baseline gap-4 py-5 border-b text-left"
+              style={{ borderColor: `${primaryColor}18` }}>
+              <span className="font-mono text-[9px] uppercase tracking-widest flex-shrink-0"
+                style={{ color: primaryColor }}>0{i + 1}</span>
+              <span className="font-display font-bold capitalize"
+                style={{ fontSize: "clamp(2.5rem, 11vw, 4rem)", letterSpacing: "-0.025em", color: textFg }}>
+                {id}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="px-8 pb-10 flex items-center justify-between">
+          <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
+            © 2025 KIAN
+          </p>
+          <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
+            hello@kian.design
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Hero ──────────────────────────────────────────────────
+   Letters reveal via clip-path wipe (not opacity/y).
+   Subtitle uses TypewriterText cycling component.
+   ScrollTrigger parallax on canvas vs text block.           */
 function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string }) {
   const textFg = isDark ? "#dce3f6" : "#0f0c0e";
   const muted = isDark ? "rgba(220,227,246,0.35)" : "rgba(15,12,14,0.28)";
