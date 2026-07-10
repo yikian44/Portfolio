@@ -77,7 +77,7 @@ function Preloader({ onComplete }: { onComplete: () => void }) {
       {/* Top label */}
       <div className="relative flex justify-between items-start">
         <p className="pre-meta font-mono text-[9px] uppercase tracking-[0.3em] opacity-0" style={{ color: "#1640d3" }}>
-          Portfolio — 2025
+          Portfolio — 2026
         </p>
         <p className="pre-meta font-mono text-[9px] uppercase tracking-widest opacity-0" style={{ color: "rgba(15,12,14,0.35)" }}>
           Loading
@@ -751,7 +751,7 @@ function Nav({ isDark, onToggleDark, primaryColor }: {
         {/* Footer */}
         <div className="px-8 pb-10 flex items-center justify-between">
           <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
-            © 2025 KIAN
+            © 2026 KIAN
           </p>
           <p className="font-mono text-[8px] uppercase tracking-widest" style={{ color: `${primaryColor}55` }}>
             hello@kian.design
@@ -835,7 +835,7 @@ function Hero({ isDark, primaryColor }: { isDark: boolean; primaryColor: string 
       <div className="hero-meta relative z-10 flex justify-between items-start mt-4">
         <div>
           <p className="font-mono text-[9px] uppercase tracking-[0.3em] mb-2" style={{ color: primaryColor }}>
-            Portfolio — 2025
+            Portfolio — 2026
           </p>
           <TypewriterText color={muted} />
         </div>
@@ -1445,10 +1445,21 @@ function Root() {
   const primaryColor = isDark ? "#5b86ef" : "#1640d3";
   const overlayRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useLenis();
   useScrollSkew();
   useIdleAmbient();
+
+  // Scroll to top on page/route transition
+  useEffect(() => {
+    const lenis = (window as any).lenis;
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
 
   const toggleDark = useCallback(() => {
     const root = document.documentElement;
